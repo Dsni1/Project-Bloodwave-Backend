@@ -112,3 +112,4 @@
 /home/dani/Projects/Project-Bloodwave-Backend/Project-Bloodwave-Backend/obj/Debug/net8.0/Project-Bloodwave-Backend.pdb
 /home/dani/Projects/Project-Bloodwave-Backend/Project-Bloodwave-Backend/obj/Debug/net8.0/Project-Bloodwave-Backend.genruntimeconfig.cache
 /home/dani/Projects/Project-Bloodwave-Backend/Project-Bloodwave-Backend/obj/Debug/net8.0/ref/Project-Bloodwave-Backend.dll
+/home/dani/Projects/Project-Bloodwave-Backend/Project-Bloodwave-Backend/obj/Debug/net8.0/Project-Bloodwave-Backend.sourcelink.json

@@ -12,6 +12,10 @@ public class BloodwaveDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
+    public DbSet<PlayerStats> PlayerStats { get; set; }
+    public DbSet<Match> Matches { get; set; }
+    public DbSet<Item> Items { get; set; }
+    public DbSet<MatchItem> MatchItems { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -38,5 +42,32 @@ public class BloodwaveDbContext : DbContext
         // RefreshToken configuration
         modelBuilder.Entity<RefreshToken>()
             .HasKey(rt => rt.Id);
+
+        // PlayerStats configuration
+        modelBuilder.Entity<PlayerStats>()
+            .HasOne(ps => ps.User)
+            .WithOne(u => u.PlayerStats)
+            .HasForeignKey<PlayerStats>(ps => ps.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Match configuration
+        modelBuilder.Entity<Match>()
+            .HasOne(m => m.User)
+            .WithMany(u => u.Matches)
+            .HasForeignKey(m => m.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // MatchItem configuration (M:N kapcsolat)
+        modelBuilder.Entity<MatchItem>()
+            .HasOne(mi => mi.Match)
+            .WithMany(m => m.MatchItems)
+            .HasForeignKey(mi => mi.MatchId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MatchItem>()
+            .HasOne(mi => mi.Item)
+            .WithMany(i => i.MatchItems)
+            .HasForeignKey(mi => mi.ItemId)
+            .OnDelete(DeleteBehavior.Cascade);
     }
 }

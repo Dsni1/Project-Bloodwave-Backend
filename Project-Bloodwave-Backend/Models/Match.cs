@@ -1,0 +1,52 @@
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace Project_Bloodwave_Backend.Models;
+
+[Table("Matches")]
+public class Match
+{
+    [Key]
+    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("id")]
+    public int Id { get; set; }
+
+    [Required]
+    [Column("user_id")]
+    public int UserId { get; set; }
+
+    [ForeignKey(nameof(UserId))]
+    [InverseProperty(nameof(User.Matches))]
+    public User? User { get; set; }
+
+    [Required]
+    [Column("time")]
+    public int Time { get; set; } // másodpercben
+
+    [Required]
+    [Column("level")]
+    public int Level { get; set; }
+
+    [Required]
+    [Column("max_health")]
+    public int MaxHealth { get; set; }
+
+    [MaxLength(255)]
+    [Column("weapon1")]
+    public string? Weapon1 { get; set; }
+
+    [MaxLength(255)]
+    [Column("weapon2")]
+    public string? Weapon2 { get; set; }
+
+    [MaxLength(255)]
+    [Column("weapon3")]
+    public string? Weapon3 { get; set; }
+
+    [Column("created_at")]
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
+
+    // Navigation properties
+    [InverseProperty(nameof(MatchItem.Match))]
+    public ICollection<MatchItem> MatchItems { get; set; } = new List<MatchItem>();
+}

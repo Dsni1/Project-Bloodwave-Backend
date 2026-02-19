@@ -34,7 +34,16 @@ public class User
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
+    [Column("updated_at")]
+    public DateTime? UpdatedAt { get; set; }
+
     // Navigation properties
     [InverseProperty(nameof(RefreshToken.User))]
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
+
+    [InverseProperty(nameof(PlayerStats.User))]
+    public PlayerStats? PlayerStats { get; set; }
+
+    [InverseProperty(nameof(Match.User))]
+    public ICollection<Match> Matches { get; set; } = new List<Match>();
 }
