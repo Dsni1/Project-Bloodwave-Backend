@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Authorization;
 using Project_Bloodwave_Backend.DTOs;
 using Project_Bloodwave_Backend.Services;
-using System.Security.Claims;
+using Project_Bloodwave_Backend.Extensions;
 
 namespace Project_Bloodwave_Backend.Controllers;
 
@@ -50,9 +50,9 @@ public class AuthController : ControllerBase
     [Authorize]
     public async Task<ActionResult<AuthResponseDto>> Logout()
     {
-        var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
-        if (userIdClaim == null || !int.TryParse(userIdClaim.Value, out int userId))
-            return Unauthorized(new AuthResponseDto { Success = false, Message = "Invalid token" });
+        var validationError = this.ValidateAndGetUserId(out int userId);
+        if (validationError != null)
+            return validationError;
 
         var result = await _authService.LogoutAsync(userId);
         return result.Success ? Ok(result) : BadRequest(result);

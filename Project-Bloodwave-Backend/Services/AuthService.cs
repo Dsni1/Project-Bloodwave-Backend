@@ -4,6 +4,7 @@ using Project_Bloodwave_Backend.Models;
 using Microsoft.AspNetCore.Identity;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
+using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
 
@@ -16,11 +17,22 @@ public interface IAuthService
     Task<AuthResponseDto> LogoutAsync(int userId);
 }
 
+/// <summary>
+/// Service responsible for user authentication and JWT token generation
+/// </summary>
 public class AuthService : IAuthService
 {
     private readonly BloodwaveDbContext _context;
     private readonly PasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
+    
+    private const string InvalidCredentialsMessage = "Invalid username or password";
+    private const string DefaultJwtKey = "your-super-secret-key-that-must-be-at-least-32-characters-long-for-hmacsha256";
+    private const string DefaultJwtIssuer = "BloodwaveApi";
+    private const string DefaultJwtAudience = "BloodwaveClient";
+    private const int TokenExpirationHours = 24;
+    private const int RefreshTokenExpirationDays = 7;
+    private const int RefreshTokenByteLength = 64;
 
     public AuthService(BloodwaveDbContext context, IConfiguration configuration)
     {
@@ -31,41 +43,26 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
     {
-        if (string.IsNullOrWhiteSpace(registerDto.Username) || string.IsNullOrWhiteSpace(registerDto.Password))
-            return new AuthResponseDto { Success = false, Message = "Username and password required" };
+        var validationResult = ValidateInputAsync(registerDto);
+        if (!validationResult.IsValid)
+            return validationResult.ToResponse();
 
-        var userExists = _context.Users.FirstOrDefault(u => u.Username == registerDto.Username);
-        if (userExists != null)
-            return new AuthResponseDto { Success = false, Message = "Username already exists" };
+        var existingUserResult = CheckExistingUser(registerDto.Username, registerDto.Email);
+        if (existingUserResult != null)
+            return existingUserResult;
 
-        var emailExists = _context.Users.FirstOrDefault(u => u.Email == registerDto.Email);
-        if (emailExists != null)
-            return new AuthResponseDto { Success = false, Message = "Email already registered" };
-
-        var user = new User
-        {
-            Username = registerDto.Username,
-            Email = registerDto.Email,
-            PasswordHash = _passwordHasher.HashPassword(null!, registerDto.Password),
-            IsActive = true,
-            CreatedAt = DateTime.UtcNow
-        };
-
+        var user = CreateUser(registerDto);
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        var token = GenerateJwtToken(user);
-        var refreshToken = GenerateRefreshToken(user.Id);
-        
-        _context.RefreshTokens.Add(refreshToken);
-        await _context.SaveChangesAsync();
+        await CreateRefreshTokenAsync(user.Id);
 
         return new AuthResponseDto
         {
             Success = true,
             Message = "User registered successfully",
-            Token = token,
-            User = new UserDto { Id = user.Id, Username = user.Username, Email = user.Email }
+            Token = GenerateJwtToken(user),
+            User = MapToUserDto(user)
         };
     }
 
@@ -73,33 +70,32 @@ public class AuthService : IAuthService
     {
         var user = _context.Users.FirstOrDefault(u => u.Username == loginDto.Username);
         if (user == null)
-            return new AuthResponseDto { Success = false, Message = "Invalid username or password" };
+            return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
 
-        var verifyResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
-        if (verifyResult == PasswordVerificationResult.Failed)
-            return new AuthResponseDto { Success = false, Message = "Invalid username or password" };
+        var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
+        if (passwordVerificationResult == PasswordVerificationResult.Failed)
+            return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
 
         if (!user.IsActive)
             return new AuthResponseDto { Success = false, Message = "User account is inactive" };
 
-        var token = GenerateJwtToken(user);
-        var refreshToken = GenerateRefreshToken(user.Id);
-        
-        _context.RefreshTokens.Add(refreshToken);
-        await _context.SaveChangesAsync();
+        await CreateRefreshTokenAsync(user.Id);
 
         return new AuthResponseDto
         {
             Success = true,
             Message = "Login successful",
-            Token = token,
-            User = new UserDto { Id = user.Id, Username = user.Username, Email = user.Email }
+            Token = GenerateJwtToken(user),
+            User = MapToUserDto(user)
         };
     }
 
     public async Task<AuthResponseDto> LogoutAsync(int userId)
     {
-        var refreshTokens = _context.RefreshTokens.Where(rt => rt.UserId == userId && rt.RevokedAt == null);
+        var refreshTokens = _context.RefreshTokens
+            .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+            .ToList();
+
         foreach (var refreshToken in refreshTokens)
         {
             refreshToken.RevokedAt = DateTime.UtcNow;
@@ -114,11 +110,12 @@ public class AuthService : IAuthService
         };
     }
 
+    /// <summary>
+    /// Generates a JWT token for the specified user
+    /// </summary>
     private string GenerateJwtToken(User user)
     {
-        var key = new SymmetricSecurityKey(
-            Encoding.UTF8.GetBytes(_configuration["Jwt:Key"] ?? "your-super-secret-key-that-must-be-at-least-32-characters-long-for-hmacsha256")
-        );
+        var key = new SymmetricSecurityKey(GetJwtKeyBytes());
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
         var claims = new[]
@@ -129,31 +126,123 @@ public class AuthService : IAuthService
         };
 
         var token = new JwtSecurityToken(
-            issuer: _configuration["Jwt:Issuer"] ?? "BloodwaveApi",
-            audience: _configuration["Jwt:Audience"] ?? "BloodwaveClient",
+            issuer: GetConfigValue("Jwt:Issuer", DefaultJwtIssuer),
+            audience: GetConfigValue("Jwt:Audience", DefaultJwtAudience),
             claims: claims,
-            expires: DateTime.UtcNow.AddHours(24),
+            expires: DateTime.UtcNow.AddHours(TokenExpirationHours),
             signingCredentials: credentials
         );
 
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
-    private RefreshToken GenerateRefreshToken(int userId)
+    /// <summary>
+    /// Gets the JWT signing key from configuration
+    /// </summary>
+    private byte[] GetJwtKeyBytes()
     {
-        var randomBytes = new byte[64];
-        using (var rng = System.Security.Cryptography.RandomNumberGenerator.Create())
+        var keyString = GetConfigValue("Jwt:Key", DefaultJwtKey);
+        return Encoding.UTF8.GetBytes(keyString);
+    }
+
+    /// <summary>
+    /// Creates and stores a refresh token for the user
+    /// </summary>
+    private async Task CreateRefreshTokenAsync(int userId)
+    {
+        var refreshToken = new RefreshToken
+        {
+            UserId = userId,
+            Token = GenerateRandomToken(),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
+            CreatedByIp = "127.0.0.1"
+        };
+
+        _context.RefreshTokens.Add(refreshToken);
+        await _context.SaveChangesAsync();
+    }
+
+    /// <summary>
+    /// Generates a cryptographically secure random token
+    /// </summary>
+    private string GenerateRandomToken()
+    {
+        var randomBytes = new byte[RefreshTokenByteLength];
+        using (var rng = RandomNumberGenerator.Create())
         {
             rng.GetBytes(randomBytes);
         }
+        return Convert.ToBase64String(randomBytes);
+    }
 
-        return new RefreshToken
+    /// <summary>
+    /// Creates a new user entity from registration data
+    /// </summary>
+    private User CreateUser(RegisterDto registerDto)
+    {
+        return new User
         {
-            UserId = userId,
-            Token = Convert.ToBase64String(randomBytes),
-            CreatedAt = DateTime.UtcNow,
-            ExpiresAt = DateTime.UtcNow.AddDays(7),
-            CreatedByIp = "127.0.0.1"
+            Username = registerDto.Username,
+            Email = registerDto.Email,
+            PasswordHash = _passwordHasher.HashPassword(null!, registerDto.Password),
+            IsActive = true,
+            CreatedAt = DateTime.UtcNow
         };
     }
+
+    /// <summary>
+    /// Checks if user already exists by username or email
+    /// </summary>
+    private AuthResponseDto? CheckExistingUser(string username, string email)
+    {
+        if (_context.Users.Any(u => u.Username == username))
+            return new AuthResponseDto { Success = false, Message = "Username already exists" };
+
+        if (_context.Users.Any(u => u.Email == email))
+            return new AuthResponseDto { Success = false, Message = "Email already registered" };
+
+        return null;
+    }
+
+    /// <summary>
+    /// Maps a user entity to user DTO
+    /// </summary>
+    private static UserDto MapToUserDto(User user)
+    {
+        return new UserDto
+        {
+            Id = user.Id,
+            Username = user.Username,
+            Email = user.Email
+        };
+    }
+
+    /// <summary>
+    /// Gets a configuration value with a default fallback
+    /// </summary>
+    private string GetConfigValue(string key, string defaultValue)
+    {
+        return _configuration[key] ?? defaultValue;
+    }
+
+    /// <summary>
+    /// Validates registration input data
+    /// </summary>
+    private static RegistrationValidation ValidateInputAsync(RegisterDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Username) || string.IsNullOrWhiteSpace(dto.Password))
+            return new RegistrationValidation(false, "Username and password required");
+
+        return new RegistrationValidation(true, null);
+    }
+}
+
+/// <summary>
+/// Validation result helper for registration input
+/// </summary>
+internal record RegistrationValidation(bool IsValid, string? ErrorMessage)
+{
+    public AuthResponseDto ToResponse() =>
+        new() { Success = false, Message = ErrorMessage ?? "Validation failed" };
 }
