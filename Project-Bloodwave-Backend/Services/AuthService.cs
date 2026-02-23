@@ -7,6 +7,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
 using Microsoft.IdentityModel.Tokens;
+using Microsoft.EntityFrameworkCore;
 
 namespace Project_Bloodwave_Backend.Services;
 
@@ -15,6 +16,7 @@ public interface IAuthService
     Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
     Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
     Task<AuthResponseDto> LogoutAsync(int userId);
+    Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
 }
 
 /// <summary>
@@ -23,7 +25,6 @@ public interface IAuthService
 public class AuthService : IAuthService
 {
     private readonly BloodwaveDbContext _context;
-    private readonly PasswordHasher<User> _passwordHasher;
     private readonly IConfiguration _configuration;
     
     private const string InvalidCredentialsMessage = "Invalid username or password";
@@ -37,7 +38,6 @@ public class AuthService : IAuthService
     public AuthService(BloodwaveDbContext context, IConfiguration configuration)
     {
         _context = context;
-        _passwordHasher = new PasswordHasher<User>();
         _configuration = configuration;
     }
 
@@ -55,37 +55,44 @@ public class AuthService : IAuthService
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
 
-        await CreateRefreshTokenAsync(user.Id);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
         return new AuthResponseDto
         {
             Success = true,
             Message = "User registered successfully",
             Token = GenerateJwtToken(user),
+            RefreshToken = refreshToken.Token,
+            ExpiresAt = refreshToken.ExpiresAt,
             User = MapToUserDto(user)
         };
     }
 
     public async Task<AuthResponseDto> LoginAsync(LoginDto loginDto)
     {
-        var user = _context.Users.FirstOrDefault(u => u.Username == loginDto.Username);
-        if (user == null)
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Username == loginDto.Username);
+        
+        if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
 
+        /*
         var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
         if (passwordVerificationResult == PasswordVerificationResult.Failed)
             return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
-
+        */
         if (!user.IsActive)
             return new AuthResponseDto { Success = false, Message = "User account is inactive" };
 
-        await CreateRefreshTokenAsync(user.Id);
+        var accesToken = GenerateJwtToken(user);
+        var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
         return new AuthResponseDto
         {
             Success = true,
             Message = "Login successful",
-            Token = GenerateJwtToken(user),
+            Token = accesToken,
+            RefreshToken = refreshToken.Token,
+            ExpiresAt = DateTime.UtcNow.AddHours(TokenExpirationHours),
             User = MapToUserDto(user)
         };
     }
@@ -148,7 +155,7 @@ public class AuthService : IAuthService
     /// <summary>
     /// Creates and stores a refresh token for the user
     /// </summary>
-    private async Task CreateRefreshTokenAsync(int userId)
+    private async Task<RefreshToken> CreateRefreshTokenAsync(int userId)
     {
         var refreshToken = new RefreshToken
         {
@@ -161,6 +168,7 @@ public class AuthService : IAuthService
 
         _context.RefreshTokens.Add(refreshToken);
         await _context.SaveChangesAsync();
+        return refreshToken;
     }
 
     /// <summary>
@@ -185,7 +193,7 @@ public class AuthService : IAuthService
         {
             Username = registerDto.Username,
             Email = registerDto.Email,
-            PasswordHash = _passwordHasher.HashPassword(null!, registerDto.Password),
+            PasswordHash = BCrypt.Net.BCrypt.HashPassword(registerDto.Password),
             IsActive = true,
             CreatedAt = DateTime.UtcNow
         };
@@ -235,6 +243,43 @@ public class AuthService : IAuthService
             return new RegistrationValidation(false, "Username and password required");
 
         return new RegistrationValidation(true, null);
+    }
+
+        public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+    {
+        var refreshToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+
+        if (refreshToken == null || !refreshToken.IsActive)
+            return new AuthResponseDto 
+            { 
+                Success = false, 
+                Message = "Invalid or expired refresh token" 
+            };
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == refreshToken.UserId);
+        if (user == null)
+            return new AuthResponseDto 
+            { 
+                Success = false, 
+                Message = "User not found" 
+            };
+
+        // Revoke old refresh token
+        refreshToken.RevokedAt = DateTime.UtcNow;
+        
+        // Create new refresh token
+        var newRefreshToken = await CreateRefreshTokenAsync(user.Id);
+
+        return new AuthResponseDto
+        {
+            Success = true,
+            Message = "Token refreshed successfully",
+            Token = GenerateJwtToken(user),
+            RefreshToken = newRefreshToken.Token,
+            ExpiresAt = newRefreshToken.ExpiresAt,
+            User = MapToUserDto(user)
+        };
     }
 }
 

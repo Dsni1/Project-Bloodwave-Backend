@@ -57,4 +57,17 @@ public class AuthController : ControllerBase
         var result = await _authService.LogoutAsync(userId);
         return result.Success ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Refresh access token using a valid refresh token
+    /// </summary>
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> Refresh([FromBody] RefreshTokenDto dto )
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.RefreshTokenAsync(dto);
+        return result.Success ? Ok(result) : Unauthorized(result);
+    }
 }

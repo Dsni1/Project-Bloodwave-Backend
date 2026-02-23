@@ -16,6 +16,8 @@ public class BloodwaveDbContext : DbContext
     public DbSet<Match> Matches { get; set; }
     public DbSet<Item> Items { get; set; }
     public DbSet<MatchItem> MatchItems { get; set; }
+    public DbSet<Weapon> Weapons { get; set; }
+    public DbSet<MatchWeapon> MatchWeapons { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -68,6 +70,19 @@ public class BloodwaveDbContext : DbContext
             .HasOne(mi => mi.Item)
             .WithMany(i => i.MatchItems)
             .HasForeignKey(mi => mi.ItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // MatchWeapon configuration (M:N kapcsolat)
+        modelBuilder.Entity<MatchWeapon>()
+            .HasOne(mw => mw.Match)
+            .WithMany(m => m.MatchWeapons)
+            .HasForeignKey(mw => mw.MatchId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<MatchWeapon>()
+            .HasOne(mw => mw.Weapon)
+            .WithMany(w => w.MatchWeapons)
+            .HasForeignKey(mw => mw.WeaponId)
             .OnDelete(DeleteBehavior.Cascade);
     }
 }

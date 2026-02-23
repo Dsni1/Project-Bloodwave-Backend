@@ -49,4 +49,7 @@ public class Match
     // Navigation properties
     [InverseProperty(nameof(MatchItem.Match))]
     public ICollection<MatchItem> MatchItems { get; set; } = new List<MatchItem>();
+
+    [InverseProperty(nameof(MatchWeapon.Match))]
+    public ICollection<MatchWeapon> MatchWeapons { get; set; } = new List<MatchWeapon>();
 }
