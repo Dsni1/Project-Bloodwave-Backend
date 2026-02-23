@@ -172,6 +172,35 @@ public class AuthService : IAuthService
     }
 
     /// <summary>
+    /// Creates and stores a refresh token for the user, revoking the old one
+    /// </summary>
+    private async Task<RefreshToken> CreateRefreshTokenAsync(int userId, string oldToken)
+    {
+        // Revoke old token
+        var oldRefreshToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.Token == oldToken && rt.UserId == userId);
+        
+        if (oldRefreshToken != null)
+        {
+            oldRefreshToken.RevokedAt = DateTime.UtcNow;
+        }
+
+        var newRefreshToken = new RefreshToken
+        {
+            UserId = userId,
+            Token = GenerateRandomToken(),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
+            ReplacesToken = oldToken,
+            CreatedByIp = "127.0.0.1"
+        };
+
+        _context.RefreshTokens.Add(newRefreshToken);
+        await _context.SaveChangesAsync();
+        return newRefreshToken;
+    }
+
+    /// <summary>
     /// Generates a cryptographically secure random token
     /// </summary>
     private string GenerateRandomToken()
@@ -245,7 +274,7 @@ public class AuthService : IAuthService
         return new RegistrationValidation(true, null);
     }
 
-        public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
     {
         var refreshToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
@@ -264,12 +293,9 @@ public class AuthService : IAuthService
                 Success = false, 
                 Message = "User not found" 
             };
-
-        // Revoke old refresh token
-        refreshToken.RevokedAt = DateTime.UtcNow;
         
         // Create new refresh token
-        var newRefreshToken = await CreateRefreshTokenAsync(user.Id);
+        var newRefreshToken = await CreateRefreshTokenAsync(user.Id, refreshTokenDto.RefreshToken);
 
         return new AuthResponseDto
         {
