@@ -75,11 +75,6 @@ public class AuthService : IAuthService
         if (user == null || !BCrypt.Net.BCrypt.Verify(loginDto.Password, user.PasswordHash))
             return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
 
-        /*
-        var passwordVerificationResult = _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, loginDto.Password);
-        if (passwordVerificationResult == PasswordVerificationResult.Failed)
-            return new AuthResponseDto { Success = false, Message = InvalidCredentialsMessage };
-        */
         if (!user.IsActive)
             return new AuthResponseDto { Success = false, Message = "User account is inactive" };
 

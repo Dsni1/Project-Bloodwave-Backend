@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("Project-Bloodwave-Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+7e0c11fe11ca8219b2d821a5f4edf1b0246f2dd3")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+620393026669be1267f5a0095a5546ef10878c0c")]
 [assembly: System.Reflection.AssemblyProductAttribute("Project-Bloodwave-Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("Project-Bloodwave-Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

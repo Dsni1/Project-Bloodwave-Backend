@@ -19,6 +19,20 @@ public class PlayerController : ControllerBase
     public PlayerController(IPlayerService playerService) => _playerService = playerService;
 
     /// <summary>
+    /// Soft delete player
+    /// </summary>
+    [HttpDelete("delete")]
+    public async Task<ActionResult> DeleteUser()
+    {
+        var validationError = this.ValidateAndGetUserId(out int userId);
+        if (validationError != null)
+            return validationError;
+
+        var result = await _playerService.DeleteUserAsync(userId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
     /// Create a new match for current player
     /// </summary>
     [HttpPost("match")]

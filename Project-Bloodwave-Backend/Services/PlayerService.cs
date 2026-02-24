@@ -7,6 +7,7 @@ namespace Project_Bloodwave_Backend.Services;
 
 public interface IPlayerService
 {
+    Task<PlayerDto> DeleteUserAsync(int userId);
     Task<MatchDto> CreateMatchAsync(int userId, CreateMatchDto createMatchDto);
     Task<List<MatchDto>> GetAllMatchesAsync(int userId);
     Task<MatchDto?> GetMatchByIdAsync(int matchId, int userId);
@@ -19,6 +20,17 @@ public class PlayerService : IPlayerService
     public PlayerService(BloodwaveDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<PlayerDto> DeleteUserAsync(int userId)
+    {
+        var user = await _context.Users.FindAsync(userId);
+        if (user == null)
+            return new PlayerDto { Success = false, Message = "User not found" };
+        user.IsActive = false;
+        await _context.SaveChangesAsync();
+
+        return new PlayerDto { Success = true, Message = "User deactivated successfully" };
     }
 
     public async Task<MatchDto> CreateMatchAsync(int userId, CreateMatchDto createMatchDto)
