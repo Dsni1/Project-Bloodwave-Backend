@@ -19,23 +19,6 @@ public class PlayerController : ControllerBase
     public PlayerController(IPlayerService playerService) => _playerService = playerService;
 
     /// <summary>
-    /// Get current player's stats
-    /// </summary>
-    [HttpGet("stats")]
-    public async Task<ActionResult<PlayerStatsDto>> GetStats()
-    {
-        var validationError = this.ValidateAndGetUserId(out int userId);
-        if (validationError != null)
-            return validationError;
-
-        var stats = await _playerService.GetPlayerStatsAsync(userId);
-        if (stats == null)
-            return NotFound(new { message = "Player stats not found" });
-
-        return Ok(stats);
-    }
-
-    /// <summary>
     /// Create a new match for current player
     /// </summary>
     [HttpPost("match")]
@@ -81,19 +64,5 @@ public class PlayerController : ControllerBase
             return NotFound(new { message = "Match not found" });
 
         return Ok(match);
-    }
-
-    /// <summary>
-    /// Get the global leaderboard of all players
-    /// </summary>
-    [HttpGet("leaderboard")]
-    [AllowAnonymous]
-    public async Task<ActionResult<List<LeaderboardEntryDto>>> GetLeaderboard([FromQuery] int limit = 100)
-    {
-        if (limit <= 0 || limit > 1000)
-            limit = 100;
-
-        var leaderboard = await _playerService.GetLeaderboardAsync(limit);
-        return Ok(leaderboard);
     }
 }

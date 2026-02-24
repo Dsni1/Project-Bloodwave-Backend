@@ -2,6 +2,7 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Project_Bloodwave_Backend.Data;
 
@@ -10,9 +11,11 @@ using Project_Bloodwave_Backend.Data;
 namespace Project_Bloodwave_Backend.Migrations
 {
     [DbContext(typeof(BloodwaveDbContext))]
-    partial class BloodwaveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260224083630_RemovedWeaponsFromMatches")]
+    partial class RemovedWeaponsFromMatches
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -122,6 +125,37 @@ namespace Project_Bloodwave_Backend.Migrations
                     b.HasIndex("WeaponId");
 
                     b.ToTable("MatchWeapons");
+                });
+
+            modelBuilder.Entity("Project_Bloodwave_Backend.Models.PlayerStats", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int")
+                        .HasColumnName("id");
+
+                    b.Property<int>("HighestLevel")
+                        .HasColumnType("int")
+                        .HasColumnName("highest_level");
+
+                    b.Property<int>("TotalKills")
+                        .HasColumnType("int")
+                        .HasColumnName("total_kills");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime(6)")
+                        .HasColumnName("updated_at");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("PlayerStats");
                 });
 
             modelBuilder.Entity("Project_Bloodwave_Backend.Models.RefreshToken", b =>
@@ -295,6 +329,17 @@ namespace Project_Bloodwave_Backend.Migrations
                     b.Navigation("Weapon");
                 });
 
+            modelBuilder.Entity("Project_Bloodwave_Backend.Models.PlayerStats", b =>
+                {
+                    b.HasOne("Project_Bloodwave_Backend.Models.User", "User")
+                        .WithOne("PlayerStats")
+                        .HasForeignKey("Project_Bloodwave_Backend.Models.PlayerStats", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("Project_Bloodwave_Backend.Models.RefreshToken", b =>
                 {
                     b.HasOne("Project_Bloodwave_Backend.Models.User", "User")
@@ -321,6 +366,8 @@ namespace Project_Bloodwave_Backend.Migrations
             modelBuilder.Entity("Project_Bloodwave_Backend.Models.User", b =>
                 {
                     b.Navigation("Matches");
+
+                    b.Navigation("PlayerStats");
 
                     b.Navigation("RefreshTokens");
                 });

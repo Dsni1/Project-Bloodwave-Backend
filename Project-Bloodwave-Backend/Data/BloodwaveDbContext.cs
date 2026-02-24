@@ -12,7 +12,6 @@ public class BloodwaveDbContext : DbContext
 
     public DbSet<User> Users { get; set; }
     public DbSet<RefreshToken> RefreshTokens { get; set; }
-    public DbSet<PlayerStats> PlayerStats { get; set; }
     public DbSet<Match> Matches { get; set; }
     public DbSet<Item> Items { get; set; }
     public DbSet<MatchItem> MatchItems { get; set; }
@@ -44,13 +43,6 @@ public class BloodwaveDbContext : DbContext
         // RefreshToken configuration
         modelBuilder.Entity<RefreshToken>()
             .HasKey(rt => rt.Id);
-
-        // PlayerStats configuration
-        modelBuilder.Entity<PlayerStats>()
-            .HasOne(ps => ps.User)
-            .WithOne(u => u.PlayerStats)
-            .HasForeignKey<PlayerStats>(ps => ps.UserId)
-            .OnDelete(DeleteBehavior.Cascade);
 
         // Match configuration
         modelBuilder.Entity<Match>()

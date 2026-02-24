@@ -41,9 +41,6 @@ public class User
     [InverseProperty(nameof(RefreshToken.User))]
     public ICollection<RefreshToken> RefreshTokens { get; set; } = new List<RefreshToken>();
 
-    [InverseProperty(nameof(PlayerStats.User))]
-    public PlayerStats? PlayerStats { get; set; }
-
     [InverseProperty(nameof(Match.User))]
     public ICollection<Match> Matches { get; set; } = new List<Match>();
 }

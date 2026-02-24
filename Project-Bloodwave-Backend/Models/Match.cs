@@ -31,18 +31,6 @@ public class Match
     [Column("max_health")]
     public int MaxHealth { get; set; }
 
-    [MaxLength(255)]
-    [Column("weapon1")]
-    public string? Weapon1 { get; set; }
-
-    [MaxLength(255)]
-    [Column("weapon2")]
-    public string? Weapon2 { get; set; }
-
-    [MaxLength(255)]
-    [Column("weapon3")]
-    public string? Weapon3 { get; set; }
-
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
