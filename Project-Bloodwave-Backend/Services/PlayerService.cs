@@ -30,7 +30,7 @@ public class PlayerService : IPlayerService
         user.IsActive = false;
         await _context.SaveChangesAsync();
 
-        return new PlayerDto { Success = true, Message = "User deactivated successfully" };
+        return new PlayerDto { Success = true, Message = "User deleted successfully" };
     }
 
     public async Task<MatchDto> CreateMatchAsync(int userId, CreateMatchDto createMatchDto)
@@ -48,26 +48,42 @@ public class PlayerService : IPlayerService
         await _context.SaveChangesAsync();
 
         await AddMatchItemsAsync(match.Id, createMatchDto.ItemIds);
+        await AddMatchWeaponsAsync(match.Id, createMatchDto.WeaponIds);
 
-        return MapToMatchDto(match, createMatchDto.ItemIds);
+        var createdMatch = await _context.Matches
+            .Include(m => m.MatchItems)
+                .ThenInclude(mi => mi.Item)
+            .Include(m => m.MatchWeapons)
+                .ThenInclude(mw => mw.Weapon)
+            .FirstAsync(m => m.Id == match.Id);
+
+        return MapToMatchDtoWithRelations(createdMatch);
     }
 
     public async Task<List<MatchDto>> GetAllMatchesAsync(int userId)
     {
         var matches = await _context.Matches
             .Where(m => m.UserId == userId)
+            .Include(m => m.MatchItems)
+                .ThenInclude(mi => mi.Item)
+            .Include(m => m.MatchWeapons)
+                .ThenInclude(mw => mw.Weapon)
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync();
 
-        return matches.Select(match => MapToMatchDtoWithItems(match)).ToList();
+        return matches.Select(MapToMatchDtoWithRelations).ToList();
     }
 
     public async Task<MatchDto?> GetMatchByIdAsync(int matchId, int userId)
     {
         var match = await _context.Matches
+            .Include(m => m.MatchItems)
+                .ThenInclude(mi => mi.Item)
+            .Include(m => m.MatchWeapons)
+                .ThenInclude(mw => mw.Weapon)
             .FirstOrDefaultAsync(m => m.Id == matchId && m.UserId == userId);
 
-        return match == null ? null : MapToMatchDtoWithItems(match);
+        return match == null ? null : MapToMatchDtoWithRelations(match);
     }
 
     private async Task AddMatchItemsAsync(int matchId, List<int>? itemIds)
@@ -83,6 +99,25 @@ public class PlayerService : IPlayerService
         await _context.SaveChangesAsync();
     }
 
+    private async Task AddMatchWeaponsAsync(int matchId, List<int>? weaponIds)
+    {
+        if (weaponIds == null || weaponIds.Count == 0)
+            return;
+
+        var distinctWeaponIds = weaponIds.Distinct().ToList();
+
+        var matchWeapons = distinctWeaponIds
+            .Select(weaponId => new MatchWeapon
+            {
+                MatchId = matchId,
+                WeaponId = weaponId
+            })
+            .ToList();
+
+        _context.MatchWeapons.AddRange(matchWeapons);
+        await _context.SaveChangesAsync();
+    }
+
     private async Task<List<int>> GetMatchItemIdsAsync(int matchId)
     {
         return await _context.MatchItems
@@ -91,7 +126,11 @@ public class PlayerService : IPlayerService
             .ToListAsync();
     }
 
-    private MatchDto MapToMatchDto(Match match, List<int>? itemIds = null)
+    private MatchDto MapToMatchDto(
+        Match match,
+        List<int>? itemIds = null,
+        List<MatchItemDto>? matchItems = null,
+        List<MatchWeaponDto>? matchWeapons = null)
     {
         return new MatchDto
         {
@@ -101,18 +140,37 @@ public class PlayerService : IPlayerService
             Level = match.Level,
             MaxHealth = match.MaxHealth,
             CreatedAt = match.CreatedAt,
-            ItemIds = itemIds ?? new List<int>()
+            ItemIds = itemIds ?? new List<int>(),
+            MatchItems = matchItems ?? new List<MatchItemDto>(),
+            MatchWeapons = matchWeapons ?? new List<MatchWeaponDto>()
         };
     }
 
-    private MatchDto MapToMatchDtoWithItems(Match match)
+    private MatchDto MapToMatchDtoWithRelations(Match match)
     {
-        var itemIds = _context.MatchItems
-            .Where(mi => mi.MatchId == match.Id)
-            .Select(mi => mi.ItemId)
+        var matchItems = match.MatchItems
+            .Select(mi => new MatchItemDto
+            {
+                Id = mi.Id,
+                ItemId = mi.ItemId,
+                ItemName = mi.Item?.ItemName
+            })
             .ToList();
 
-        return MapToMatchDto(match, itemIds);
+        var matchWeapons = match.MatchWeapons
+            .Select(mw => new MatchWeaponDto
+            {
+                Id = mw.Id,
+                WeaponId = mw.WeaponId,
+                WeaponName = mw.Weapon?.ItemName
+            })
+            .ToList();
+
+        return MapToMatchDto(
+            match,
+            matchItems.Select(mi => mi.ItemId).ToList(),
+            matchItems,
+            matchWeapons);
     }
 
 }

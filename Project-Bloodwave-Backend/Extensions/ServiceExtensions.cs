@@ -13,7 +13,7 @@ namespace Project_Bloodwave_Backend.Extensions;
 /// </summary>
 public static class ServiceExtensions
 {
-    private const string DefaultJwtKey = "your-super-secret-key-that-must-be-at-least-32-characters-long-for-hmacsha256";
+    private const string DefaultJwtKey = "69631d759ff13f21b41a1bdd11d64b97";
     private const string CorsPolicyName = "AllowAll";
 
     /// <summary>
