@@ -34,6 +34,8 @@ public class AuthService : IAuthService
     private const int TokenExpirationHours = 24;
     private const int RefreshTokenExpirationDays = 7;
     private const int RefreshTokenByteLength = 64;
+    private const string AdminRoleName = "Admin";
+    private const string UserRoleName = "User";
 
     public AuthService(BloodwaveDbContext context, IConfiguration configuration)
     {
@@ -119,12 +121,14 @@ public class AuthService : IAuthService
     {
         var key = new SymmetricSecurityKey(GetJwtKeyBytes());
         var credentials = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
+        var role = ResolveRole(user);
 
         var claims = new[]
         {
             new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
             new Claim(ClaimTypes.Name, user.Username),
-            new Claim(ClaimTypes.Email, user.Email)
+            new Claim(ClaimTypes.Email, user.Email),
+            new Claim(ClaimTypes.Role, role)
         };
 
         var token = new JwtSecurityToken(
@@ -256,6 +260,29 @@ public class AuthService : IAuthService
     private string GetConfigValue(string key, string defaultValue)
     {
         return _configuration[key] ?? defaultValue;
+    }
+
+    /// <summary>
+    /// Resolves JWT role for the user from configuration.
+    /// Admin users can be defined by username or email under Authorization section.
+    /// </summary>
+    private string ResolveRole(User user)
+    {
+        var adminUsernames = _configuration
+            .GetSection("Authorization:AdminUsernames")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        if (adminUsernames.Any(u => string.Equals(u, user.Username, StringComparison.OrdinalIgnoreCase)))
+            return AdminRoleName;
+
+        var adminEmails = _configuration
+            .GetSection("Authorization:AdminEmails")
+            .Get<string[]>() ?? Array.Empty<string>();
+
+        if (adminEmails.Any(e => string.Equals(e, user.Email, StringComparison.OrdinalIgnoreCase)))
+            return AdminRoleName;
+
+        return UserRoleName;
     }
 
     /// <summary>

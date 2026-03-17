@@ -74,7 +74,7 @@ public static class ServiceExtensions
     /// </summary>
     public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
     {
-        services.AddControllers();
+        services.AddControllers().AddXmlSerializerFormatters();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {
@@ -113,6 +113,7 @@ public static class ServiceExtensions
     {
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPlayerService, PlayerService>();
+        services.AddScoped<IGameCrudService, GameCrudService>();
         return services;
     }
 
