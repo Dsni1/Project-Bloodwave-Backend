@@ -39,7 +39,7 @@ public class UserController : ControllerBase
         var user = await _crudService.GetUserByIdAsync(userId);
         return user == null ? NotFound(new { message = "User not found" }) : Ok(user);
     }
-
+    //asd
     [HttpGet("{userId:int}")]
     public async Task<ActionResult<UserDto>> GetById(int userId)
     {
