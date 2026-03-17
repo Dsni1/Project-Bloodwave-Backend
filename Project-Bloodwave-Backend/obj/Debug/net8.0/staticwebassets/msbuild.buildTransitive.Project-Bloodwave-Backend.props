@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../buildMultiTargeting/Project-Bloodwave-Backend.props" />
-</Project>

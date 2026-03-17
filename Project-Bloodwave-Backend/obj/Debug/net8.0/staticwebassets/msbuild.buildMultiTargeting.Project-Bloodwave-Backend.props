@@ -1,3 +1,0 @@
-﻿<Project>
-  <Import Project="../build/Project-Bloodwave-Backend.props" />
-</Project>
