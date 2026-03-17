@@ -20,7 +20,7 @@ namespace Project_Bloodwave_Backend.Controllers
             };
 
             return Ok(result);
-            //mükszik:)
+            //mükszik:) asd
         }
     }
 }
