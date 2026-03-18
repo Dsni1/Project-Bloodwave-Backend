@@ -28,6 +28,12 @@ public class MatchController : ControllerBase
         return Ok(await _crudService.GetMatchesByUserAsync(userId));
     }
 
+    [HttpGet("player")]
+    public async Task<ActionResult<List<MatchDto>>> GetMatchesForPlayer([FromQuery] int playerId)
+    {
+        return Ok(await _crudService.GetMatchesByUserAsync(playerId));
+    }
+
     [HttpGet("{matchId:int}")]
     public async Task<ActionResult<MatchDto>> GetById(int matchId)
     {

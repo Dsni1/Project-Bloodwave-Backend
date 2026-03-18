@@ -389,6 +389,7 @@ public class GameCrudService : IGameCrudService
             MaxHealth = match.MaxHealth,
             CreatedAt = match.CreatedAt,
             ItemIds = matchItems.Select(i => i.ItemId).ToList(),
+            WeaponIds = matchWeapons.Select(w => w.WeaponId).ToList(),
             MatchItems = matchItems,
             MatchWeapons = matchWeapons
         };
