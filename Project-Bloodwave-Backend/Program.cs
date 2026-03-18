@@ -17,11 +17,18 @@ builder.WebHost.UseUrls("http://0.0.0.0:5000");
 var app = builder.Build();
 
 // Middleware
-if (app.Environment.IsDevelopment())
+app.UseSwagger(options =>
 {
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+    options.RouteTemplate = "api/docs/{documentName}/openapi.json";
+});
+
+app.UseSwaggerUI(options =>
+{
+    options.RoutePrefix = "api/docs";
+    options.SwaggerEndpoint("/api/docs/v1/openapi.json", "Project Bloodwave API v1");
+});
+
+app.MapGet("/api", () => Results.Redirect("/api/docs"));
 
 app.UseHttpsRedirection();
 app.UseCors("AllowAll");
