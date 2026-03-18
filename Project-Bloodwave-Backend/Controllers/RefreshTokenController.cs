@@ -95,23 +95,45 @@ public class RefreshTokenController : ControllerBase
         if (validationError != null)
             return validationError;
 
-        var token = await _context.RefreshTokens.FirstOrDefaultAsync(rt => rt.Id == id && rt.UserId == userId);
-        if (token == null)
+        if (string.IsNullOrWhiteSpace(dto.RefreshToken))
+            return BadRequest(new { message = "Refresh token is required" });
+
+        var oldToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt => rt.Id == id && rt.UserId == userId);
+
+        if (oldToken == null)
             return NotFound(new { message = "Refresh token not found" });
 
-        if (!string.IsNullOrWhiteSpace(dto.RefreshToken))
-            token.Token = dto.RefreshToken;
+        if (!string.Equals(oldToken.Token, dto.RefreshToken, StringComparison.Ordinal))
+            return BadRequest(new { message = "Provided refresh token does not match the requested token" });
 
-        if (dto.ExpiresAt != default)
-            token.ExpiresAt = dto.ExpiresAt;
+        if (!oldToken.IsActive)
+            return BadRequest(new { message = "Refresh token is already revoked or expired" });
+
+        oldToken.RevokedAt = DateTime.UtcNow;
+
+        var newToken = new RefreshToken
+        {
+            UserId = userId,
+            Token = GenerateToken(),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = dto.ExpiresAt == default ? DateTime.UtcNow.AddDays(7) : dto.ExpiresAt,
+            ReplacesToken = oldToken.Token,
+            CreatedByIp = HttpContext.Connection.RemoteIpAddress?.ToString(),
+            UserAgent = Request.Headers.UserAgent.ToString()
+        };
+
+        _context.RefreshTokens.Add(newToken);
 
         await _context.SaveChangesAsync();
 
-        return Ok(new RefreshTokenDto
+        var response = new RefreshTokenDto
         {
-            RefreshToken = token.Token,
-            ExpiresAt = token.ExpiresAt
-        });
+            RefreshToken = newToken.Token,
+            ExpiresAt = newToken.ExpiresAt
+        };
+
+        return CreatedAtAction(nameof(GetById), new { id = newToken.Id }, response);
     }
 
     [HttpDelete("{id:int}")]

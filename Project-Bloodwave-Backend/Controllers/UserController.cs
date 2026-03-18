@@ -40,6 +40,18 @@ public class UserController : ControllerBase
         return result.Success ? Ok(result) : Unauthorized(result);
     }
 
+    [Authorize]
+    [HttpPost("logout")]
+    public async Task<ActionResult<AuthResponseDto>> Logout()
+    {
+        var validationError = this.ValidateAndGetUserId(out int userId);
+        if (validationError != null)
+            return validationError;
+
+        var result = await _authService.LogoutAsync(userId);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> GetMe()
     {
