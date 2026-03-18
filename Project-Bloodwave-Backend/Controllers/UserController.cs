@@ -29,6 +29,17 @@ public class UserController : ControllerBase
         return result.Success ? Ok(result) : BadRequest(result);
     }
 
+    [AllowAnonymous]
+    [HttpPost("login")]
+    public async Task<ActionResult<AuthResponseDto>> Login([FromBody] LoginDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.LoginAsync(dto);
+        return result.Success ? Ok(result) : Unauthorized(result);
+    }
+
     [HttpGet("me")]
     public async Task<ActionResult<UserDto>> GetMe()
     {
