@@ -7,6 +7,9 @@ public class MatchDto
     public int Time { get; set; }
     public int Level { get; set; }
     public int MaxHealth { get; set; }
+    public int DamageDealt { get; set; }
+    public int EnemiesKilled { get; set; }
+    public int CoinsCollected { get; set; }
     public DateTime CreatedAt { get; set; }
     public List<int>? ItemIds { get; set; }
     public List<int>? WeaponIds { get; set; }

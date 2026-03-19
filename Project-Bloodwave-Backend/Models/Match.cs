@@ -27,6 +27,13 @@ public class Match
     [Column("level")]
     public int Level { get; set; }
 
+    [Column("damage_dealt")]
+    public int DamageDealt { get; set; }
+
+    [Column("enemies_killed")]
+    public int EnemiesKilled { get; set; }
+    [Column("coins_collected")]
+    public int CoinsCollected { get; set; }
     [Required]
     [Column("max_health")]
     public int MaxHealth { get; set; }

@@ -222,6 +222,9 @@ public class GameCrudService : IGameCrudService
             UserId = userId,
             Time = dto.Time,
             Level = dto.Level,
+            DamageDealt = dto.DamageDealt,
+            EnemiesKilled = dto.EnemiesKilled,
+            CoinsCollected = dto.CoinsCollected,
             MaxHealth = dto.MaxHealth,
             CreatedAt = DateTime.UtcNow
         };
@@ -250,6 +253,9 @@ public class GameCrudService : IGameCrudService
 
         match.Time = dto.Time;
         match.Level = dto.Level;
+        match.DamageDealt = dto.DamageDealt;
+        match.EnemiesKilled = dto.EnemiesKilled;
+        match.CoinsCollected = dto.CoinsCollected;
         match.MaxHealth = dto.MaxHealth;
 
         await _context.SaveChangesAsync();
@@ -390,6 +396,9 @@ public class GameCrudService : IGameCrudService
             UserId = match.UserId,
             Time = match.Time,
             Level = match.Level,
+            DamageDealt = match.DamageDealt,
+            EnemiesKilled = match.EnemiesKilled,
+            CoinsCollected = match.CoinsCollected,
             MaxHealth = match.MaxHealth,
             CreatedAt = match.CreatedAt,
             ItemIds = matchItems.Select(i => i.ItemId).ToList(),
