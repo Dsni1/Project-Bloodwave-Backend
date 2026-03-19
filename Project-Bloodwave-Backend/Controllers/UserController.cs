@@ -73,6 +73,17 @@ public class UserController : ControllerBase
         return user == null ? NotFound(new { message = "User not found" }) : Ok(user);
     }
 
+    [AllowAnonymous]
+    [HttpGet("name")]
+    public async Task<ActionResult<UserNameDto>> GetName([FromQuery] int id)
+    {
+        var user = await _crudService.GetUserByIdAsync(id);
+        if (user == null)
+            return NotFound(new { message = "User not found" });
+
+        return Ok(new UserNameDto { Id = user.Id, Username = user.Username });
+    }
+
     [HttpPut("me")]
     public async Task<ActionResult<UserDto>> UpdateMe([FromBody] UpdateUserDto dto)
     {
