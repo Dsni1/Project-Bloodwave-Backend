@@ -19,6 +19,7 @@ public interface IGameCrudService
     Task<WeaponDto?> UpdateWeaponAsync(int weaponId, WeaponUpsertDto dto);
     Task<bool> DeleteWeaponAsync(int weaponId);
 
+    Task<List<MatchDto>> GetAllMatchesAsync();
     Task<List<MatchDto>> GetMatchesByUserAsync(int userId);
     Task<MatchDto?> GetMatchByIdAsync(int userId, int matchId);
     Task<MatchDto> CreateMatchAsync(int userId, CreateMatchDto dto);
@@ -187,6 +188,19 @@ public class GameCrudService : IGameCrudService
         _context.Weapons.Remove(weapon);
         await _context.SaveChangesAsync();
         return true;
+    }
+
+    public async Task<List<MatchDto>> GetAllMatchesAsync()
+    {
+        var matches = await _context.Matches
+            .Include(m => m.MatchItems)
+                .ThenInclude(mi => mi.Item)
+            .Include(m => m.MatchWeapons)
+                .ThenInclude(mw => mw.Weapon)
+            .OrderByDescending(m => m.CreatedAt)
+            .ToListAsync();
+
+        return matches.Select(MapToMatchDto).ToList();
     }
 
     public async Task<List<MatchDto>> GetMatchesByUserAsync(int userId)

@@ -22,11 +22,7 @@ public class MatchController : ControllerBase
     [AllowAnonymous]
     public async Task<ActionResult<List<MatchDto>>> GetAll()
     {
-        var validationError = this.ValidateAndGetUserId(out int userId);
-        if (validationError != null)
-            return validationError;
-
-        return Ok(await _crudService.GetMatchesByUserAsync(userId));
+        return Ok(await _crudService.GetAllMatchesAsync());
     }
 
     [HttpGet("player")]
