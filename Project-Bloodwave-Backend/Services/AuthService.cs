@@ -1,7 +1,6 @@
 using Project_Bloodwave_Backend.Data;
 using Project_Bloodwave_Backend.DTOs;
 using Project_Bloodwave_Backend.Models;
-using Microsoft.AspNetCore.Identity;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Security.Cryptography;
@@ -49,7 +48,7 @@ public class AuthService : IAuthService
         if (!validationResult.IsValid)
             return validationResult.ToResponse();
 
-        var existingUserResult = CheckExistingUser(registerDto.Username, registerDto.Email);
+        var existingUserResult = await CheckExistingUserAsync(registerDto.Username, registerDto.Email);
         if (existingUserResult != null)
             return existingUserResult;
 
@@ -80,14 +79,14 @@ public class AuthService : IAuthService
         if (!user.IsActive)
             return new AuthResponseDto { Success = false, Message = "User account is inactive" };
 
-        var accesToken = GenerateJwtToken(user);
+        var accessToken = GenerateJwtToken(user);
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
         return new AuthResponseDto
         {
             Success = true,
             Message = "Login successful",
-            Token = accesToken,
+            Token = accessToken,
             RefreshToken = refreshToken.Token,
             ExpiresAt = DateTime.UtcNow.AddHours(TokenExpirationHours),
             User = MapToUserDto(user)
@@ -96,9 +95,9 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> LogoutAsync(int userId)
     {
-        var refreshTokens = _context.RefreshTokens
+        var refreshTokens = await _context.RefreshTokens
             .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
-            .ToList();
+            .ToListAsync();
 
         foreach (var refreshToken in refreshTokens)
         {
@@ -205,10 +204,9 @@ public class AuthService : IAuthService
     private string GenerateRandomToken()
     {
         var randomBytes = new byte[RefreshTokenByteLength];
-        using (var rng = RandomNumberGenerator.Create())
-        {
-            rng.GetBytes(randomBytes);
-        }
+        using var rng = RandomNumberGenerator.Create();
+        rng.GetBytes(randomBytes);
+
         return Convert.ToBase64String(randomBytes);
     }
 
@@ -230,12 +228,12 @@ public class AuthService : IAuthService
     /// <summary>
     /// Checks if user already exists by username or email
     /// </summary>
-    private AuthResponseDto? CheckExistingUser(string username, string email)
+    private async Task<AuthResponseDto?> CheckExistingUserAsync(string username, string email)
     {
-        if (_context.Users.Any(u => u.Username == username))
+        if (await _context.Users.AnyAsync(u => u.Username == username))
             return new AuthResponseDto { Success = false, Message = "Username already exists" };
 
-        if (_context.Users.Any(u => u.Email == email))
+        if (await _context.Users.AnyAsync(u => u.Email == email))
             return new AuthResponseDto { Success = false, Message = "Email already registered" };
 
         return null;
@@ -298,6 +296,15 @@ public class AuthService : IAuthService
 
     public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
     {
+        if (string.IsNullOrWhiteSpace(refreshTokenDto.RefreshToken))
+        {
+            return new AuthResponseDto
+            {
+                Success = false,
+                Message = "Refresh token is required"
+            };
+        }
+
         var refreshToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
 

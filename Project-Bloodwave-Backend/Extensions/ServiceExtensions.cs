@@ -36,7 +36,9 @@ public static class ServiceExtensions
     /// </summary>
     public static IServiceCollection AddDatabaseContext(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = configuration.GetConnectionString("DefaultConnection")
+            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is missing.");
+
         return services.AddDbContext<BloodwaveDbContext>(options =>
             options.UseMySql(connectionString, ServerVersion.AutoDetect(connectionString))
         );
@@ -74,7 +76,7 @@ public static class ServiceExtensions
     /// </summary>
     public static IServiceCollection AddSwaggerWithJwt(this IServiceCollection services)
     {
-        services.AddControllers().AddXmlSerializerFormatters();
+        services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen(options =>
         {

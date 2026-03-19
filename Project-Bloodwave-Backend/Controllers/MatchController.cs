@@ -19,6 +19,7 @@ public class MatchController : ControllerBase
     }
 
     [HttpGet]
+    [AllowAnonymous]
     public async Task<ActionResult<List<MatchDto>>> GetAll()
     {
         var validationError = this.ValidateAndGetUserId(out int userId);
@@ -29,6 +30,7 @@ public class MatchController : ControllerBase
     }
 
     [HttpGet("player")]
+    [AllowAnonymous]
     public async Task<ActionResult<List<MatchDto>>> GetMatchesForPlayer([FromQuery] int playerId)
     {
         return Ok(await _crudService.GetMatchesByUserAsync(playerId));
@@ -46,6 +48,7 @@ public class MatchController : ControllerBase
     }
 
     [HttpPost]
+    [AllowAnonymous]
     public async Task<ActionResult<MatchDto>> Create([FromBody] CreateMatchDto dto)
     {
         if (!ModelState.IsValid)

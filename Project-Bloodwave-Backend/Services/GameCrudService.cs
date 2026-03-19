@@ -298,7 +298,12 @@ public class GameCrudService : IGameCrudService
 
         user.Username = dto.Username;
         user.Email = dto.Email;
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+
+        if (!string.IsNullOrWhiteSpace(dto.Password))
+        {
+            user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.Password);
+        }
+
         user.UpdatedAt = DateTime.UtcNow;
 
         await _context.SaveChangesAsync();
@@ -307,8 +312,7 @@ public class GameCrudService : IGameCrudService
         {
             Id = user.Id,
             Username = user.Username,
-            Email = user.Email,
-            Password = user.PasswordHash
+            Email = user.Email
         };
     }
 

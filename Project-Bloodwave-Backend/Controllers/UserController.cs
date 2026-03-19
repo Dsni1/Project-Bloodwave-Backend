@@ -8,6 +8,7 @@ namespace Project_Bloodwave_Backend.Controllers;
 
 [ApiController]
 [Route("api/[controller]")]
+[Authorize]
 public class UserController : ControllerBase
 {
     private readonly IGameCrudService _crudService;
@@ -19,6 +20,7 @@ public class UserController : ControllerBase
         _authService = authService;
     }
 
+    [AllowAnonymous]
     [HttpPost]
     public async Task<ActionResult<AuthResponseDto>> Create([FromBody] RegisterDto dto)
     {
@@ -62,7 +64,8 @@ public class UserController : ControllerBase
         var user = await _crudService.GetUserByIdAsync(userId);
         return user == null ? NotFound(new { message = "User not found" }) : Ok(user);
     }
-    //asd
+
+    [Authorize(Roles = "Admin")]
     [HttpGet("{userId:int}")]
     public async Task<ActionResult<UserDto>> GetById(int userId)
     {
@@ -71,7 +74,6 @@ public class UserController : ControllerBase
     }
 
     [HttpPut("me")]
-    [Authorize(Roles = "Admin")]
     public async Task<ActionResult<UserDto>> UpdateMe([FromBody] UpdateUserDto dto)
     {
         if (!ModelState.IsValid)
@@ -97,7 +99,6 @@ public class UserController : ControllerBase
     }
 
     [HttpDelete("me")]
-    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> DeleteMe()
     {
         var validationError = this.ValidateAndGetUserId(out int userId);
