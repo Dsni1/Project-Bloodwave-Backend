@@ -248,7 +248,8 @@ public class AuthService : IAuthService
         {
             Id = user.Id,
             Username = user.Username,
-            Email = user.Email
+            Email = user.Email,
+            CreatedAt = user.CreatedAt
         };
     }
 

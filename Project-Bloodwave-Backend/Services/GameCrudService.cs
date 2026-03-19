@@ -291,7 +291,8 @@ public class GameCrudService : IGameCrudService
             {
                 Id = u.Id,
                 Username = u.Username,
-                Email = u.Email
+                Email = u.Email,
+                CreatedAt = u.CreatedAt
             })
             .FirstOrDefaultAsync();
     }
@@ -318,7 +319,8 @@ public class GameCrudService : IGameCrudService
         {
             Id = user.Id,
             Username = user.Username,
-            Email = user.Email
+            Email = user.Email,
+            CreatedAt = user.CreatedAt
         };
     }
 
