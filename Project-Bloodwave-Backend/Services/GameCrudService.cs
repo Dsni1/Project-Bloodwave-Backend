@@ -147,7 +147,6 @@ public class GameCrudService : IGameCrudService
             return null;
 
         var existing = await _context.UserAchievments
-            .Include(ua => ua.Achievment)
             .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AchievmentId == achievmentId);
 
         if (existing != null)
@@ -169,7 +168,26 @@ public class GameCrudService : IGameCrudService
         };
 
         _context.UserAchievments.Add(userAchievment);
-        await _context.SaveChangesAsync();
+        try
+        {
+            await _context.SaveChangesAsync();
+        }
+        catch (DbUpdateException)
+        {
+            var existingAfterRace = await _context.UserAchievments
+                .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AchievmentId == achievmentId);
+
+            if (existingAfterRace == null)
+                throw;
+
+            return new UserAchievmentDto
+            {
+                Id = existingAfterRace.Id,
+                UserId = existingAfterRace.UserId,
+                AchievmentId = existingAfterRace.AchievmentId,
+                UnlockedAt = existingAfterRace.UnlockedAt
+            };
+        }
 
         return new UserAchievmentDto
         {
