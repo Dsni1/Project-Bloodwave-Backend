@@ -24,7 +24,7 @@ public interface IGameCrudService
     Task<MatchDto?> GetMatchByIdAsync(int userId, int matchId);
     Task<MatchDto> CreateMatchAsync(int userId, CreateMatchDto dto);
     Task<MatchDto?> UpdateMatchAsync(int userId, int matchId, UpdateMatchDto dto);
-    Task<bool> DeleteMatchAsync(int userId, int matchId);
+    Task<bool> DeleteMatchAsync(int userId, int matchId, bool canDeleteAny = false);
 
     Task<UserDto?> GetUserByIdAsync(int userId);
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto dto);
@@ -288,9 +288,11 @@ public class GameCrudService : IGameCrudService
         return MapToMatchDto(updatedMatch);
     }
 
-    public async Task<bool> DeleteMatchAsync(int userId, int matchId)
+    public async Task<bool> DeleteMatchAsync(int userId, int matchId, bool canDeleteAny = false)
     {
-        var match = await _context.Matches.FirstOrDefaultAsync(m => m.Id == matchId && m.UserId == userId);
+        var match = await _context.Matches
+            .FirstOrDefaultAsync(m => m.Id == matchId && (canDeleteAny || m.UserId == userId));
+
         if (match == null)
             return false;
 
@@ -348,6 +350,20 @@ public class GameCrudService : IGameCrudService
 
         user.IsActive = false;
         user.UpdatedAt = DateTime.UtcNow;
+
+        var activeTokens = await _context.RefreshTokens
+            .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+            .ToListAsync();
+
+        if (activeTokens.Count > 0)
+        {
+            var now = DateTime.UtcNow;
+            foreach (var token in activeTokens)
+            {
+                token.RevokedAt = now;
+            }
+        }
+
         await _context.SaveChangesAsync();
         return true;
     }

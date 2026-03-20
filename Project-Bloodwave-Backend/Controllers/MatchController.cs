@@ -74,14 +74,14 @@ public class MatchController : ControllerBase
     }
 
     [HttpDelete("{matchId:int}")]
-    [Authorize(Roles = "Admin")]
     public async Task<ActionResult> Delete(int matchId)
     {
         var validationError = this.ValidateAndGetUserId(out int userId);
         if (validationError != null)
             return validationError;
 
-        var deleted = await _crudService.DeleteMatchAsync(userId, matchId);
+        var isAdmin = User.IsInRole("Admin");
+        var deleted = await _crudService.DeleteMatchAsync(userId, matchId, isAdmin);
         return deleted ? Ok(new { success = true }) : NotFound(new { message = "Match not found" });
     }
 }
