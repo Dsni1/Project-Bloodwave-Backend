@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Project_Bloodwave_Backend.Data;
 
@@ -11,9 +12,11 @@ using Project_Bloodwave_Backend.Data;
 namespace Project_Bloodwave_Backend.Migrations
 {
     [DbContext(typeof(BloodwaveDbContext))]
-    partial class BloodwaveDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260320071407_DamageTaken")]
+    partial class DamageTaken
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder

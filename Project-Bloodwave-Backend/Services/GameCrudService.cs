@@ -237,6 +237,7 @@ public class GameCrudService : IGameCrudService
             Time = dto.Time,
             Level = dto.Level,
             DamageDealt = dto.DamageDealt,
+            DamageTaken = dto.DamageTaken,
             EnemiesKilled = dto.EnemiesKilled,
             CoinsCollected = dto.CoinsCollected,
             MaxHealth = dto.MaxHealth,
@@ -268,6 +269,7 @@ public class GameCrudService : IGameCrudService
         match.Time = dto.Time;
         match.Level = dto.Level;
         match.DamageDealt = dto.DamageDealt;
+        match.DamageTaken = dto.DamageTaken;
         match.EnemiesKilled = dto.EnemiesKilled;
         match.CoinsCollected = dto.CoinsCollected;
         match.MaxHealth = dto.MaxHealth;
@@ -413,6 +415,7 @@ public class GameCrudService : IGameCrudService
             Time = match.Time,
             Level = match.Level,
             DamageDealt = match.DamageDealt,
+            DamageTaken = match.DamageTaken,
             EnemiesKilled = match.EnemiesKilled,
             CoinsCollected = match.CoinsCollected,
             MaxHealth = match.MaxHealth,

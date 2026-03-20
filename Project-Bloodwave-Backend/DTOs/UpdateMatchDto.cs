@@ -8,6 +8,7 @@ public class UpdateMatchDto
     public int Level { get; set; }
     public int MaxHealth { get; set; }
     public int DamageDealt { get; set; }
+    public int DamageTaken { get; set; }
     public int EnemiesKilled { get; set; }
     public int CoinsCollected { get; set; }
     public List<int>? ItemIds { get; set; } = new();

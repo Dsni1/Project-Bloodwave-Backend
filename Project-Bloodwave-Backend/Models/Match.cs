@@ -29,6 +29,8 @@ public class Match
 
     [Column("damage_dealt")]
     public int DamageDealt { get; set; }
+    [Column("damage_taken")]
+    public int DamageTaken { get; set; }
 
     [Column("enemies_killed")]
     public int EnemiesKilled { get; set; }
