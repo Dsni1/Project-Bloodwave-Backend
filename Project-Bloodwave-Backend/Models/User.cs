@@ -43,4 +43,7 @@ public class User
 
     [InverseProperty(nameof(Match.User))]
     public ICollection<Match> Matches { get; set; } = new List<Match>();
+
+    [InverseProperty(nameof(UserAchievment.User))]
+    public ICollection<UserAchievment> UserAchievments { get; set; } = new List<UserAchievment>();
 }

@@ -17,6 +17,8 @@ public class BloodwaveDbContext : DbContext
     public DbSet<MatchItem> MatchItems { get; set; }
     public DbSet<Weapon> Weapons { get; set; }
     public DbSet<MatchWeapon> MatchWeapons { get; set; }
+    public DbSet<Achievment> Achievments { get; set; }
+    public DbSet<UserAchievment> UserAchievments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -40,9 +42,33 @@ public class BloodwaveDbContext : DbContext
             .HasForeignKey(rt => rt.UserId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.UserAchievments)
+            .WithOne(ua => ua.User)
+            .HasForeignKey(ua => ua.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
+
         // RefreshToken configuration
         modelBuilder.Entity<RefreshToken>()
             .HasKey(rt => rt.Id);
+
+        // Achievment configuration
+        modelBuilder.Entity<Achievment>()
+            .HasKey(a => a.Id);
+
+        // UserAchievment configuration (M:N User-Achievment)
+        modelBuilder.Entity<UserAchievment>()
+            .HasKey(ua => ua.Id);
+
+        modelBuilder.Entity<UserAchievment>()
+            .HasIndex(ua => new { ua.UserId, ua.AchievmentId })
+            .IsUnique();
+
+        modelBuilder.Entity<UserAchievment>()
+            .HasOne(ua => ua.Achievment)
+            .WithMany(a => a.UserAchievments)
+            .HasForeignKey(ua => ua.AchievmentId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Match configuration
         modelBuilder.Entity<Match>()

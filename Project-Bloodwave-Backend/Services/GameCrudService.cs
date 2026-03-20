@@ -7,6 +7,14 @@ namespace Project_Bloodwave_Backend.Services;
 
 public interface IGameCrudService
 {
+    Task<List<AchievmentDto>> GetAchievmentsAsync();
+    Task<AchievmentDto?> GetAchievmentByIdAsync(int achievmentId);
+    Task<AchievmentDto> CreateAchievmentAsync(AchievmentDto dto);
+    Task<AchievmentDto?> UpdateAchievmentAsync(int achievmentId, AchievmentDto dto);
+    Task<bool> DeleteAchievmentAsync(int achievmentId);
+    Task<List<UserAchievmentDto>> GetUserAchievmentsAsync(int userId);
+    Task<UserAchievmentDto?> UnlockAchievmentAsync(int userId, int achievmentId);
+
     Task<List<ItemDto>> GetItemsAsync();
     Task<ItemDto?> GetItemByIdAsync(int itemId);
     Task<ItemDto> CreateItemAsync(ItemUpsertDto dto);
@@ -38,6 +46,138 @@ public class GameCrudService : IGameCrudService
     public GameCrudService(BloodwaveDbContext context)
     {
         _context = context;
+    }
+
+    public async Task<List<AchievmentDto>> GetAchievmentsAsync()
+    {
+        return await _context.Achievments
+            .OrderBy(a => a.Id)
+            .Select(a => new AchievmentDto
+            {
+                Id = a.Id,
+                Title = a.Title,
+                Description = a.Description
+            })
+            .ToListAsync();
+    }
+
+    public async Task<AchievmentDto?> GetAchievmentByIdAsync(int achievmentId)
+    {
+        return await _context.Achievments
+            .Where(a => a.Id == achievmentId)
+            .Select(a => new AchievmentDto
+            {
+                Id = a.Id,
+                Title = a.Title,
+                Description = a.Description
+            })
+            .FirstOrDefaultAsync();
+    }
+
+    public async Task<AchievmentDto> CreateAchievmentAsync(AchievmentDto dto)
+    {
+        var achievment = new Achievment
+        {
+            Title = dto.Title,
+            Description = dto.Description
+        };
+
+        _context.Achievments.Add(achievment);
+        await _context.SaveChangesAsync();
+
+        return new AchievmentDto
+        {
+            Id = achievment.Id,
+            Title = achievment.Title,
+            Description = achievment.Description
+        };
+    }
+
+    public async Task<AchievmentDto?> UpdateAchievmentAsync(int achievmentId, AchievmentDto dto)
+    {
+        var achievment = await _context.Achievments.FirstOrDefaultAsync(a => a.Id == achievmentId);
+        if (achievment == null)
+            return null;
+
+        achievment.Title = dto.Title;
+        achievment.Description = dto.Description;
+
+        await _context.SaveChangesAsync();
+
+        return new AchievmentDto
+        {
+            Id = achievment.Id,
+            Title = achievment.Title,
+            Description = achievment.Description
+        };
+    }
+
+    public async Task<bool> DeleteAchievmentAsync(int achievmentId)
+    {
+        var achievment = await _context.Achievments.FirstOrDefaultAsync(a => a.Id == achievmentId);
+        if (achievment == null)
+            return false;
+
+        _context.Achievments.Remove(achievment);
+        await _context.SaveChangesAsync();
+        return true;
+    }
+
+    public async Task<List<UserAchievmentDto>> GetUserAchievmentsAsync(int userId)
+    {
+        return await _context.UserAchievments
+            .Where(ua => ua.UserId == userId)
+            .OrderByDescending(ua => ua.UnlockedAt)
+            .Select(ua => new UserAchievmentDto
+            {
+                Id = ua.Id,
+                UserId = ua.UserId,
+                AchievmentId = ua.AchievmentId,
+                UnlockedAt = ua.UnlockedAt
+            })
+            .ToListAsync();
+    }
+
+    public async Task<UserAchievmentDto?> UnlockAchievmentAsync(int userId, int achievmentId)
+    {
+        var achievment = await _context.Achievments
+            .FirstOrDefaultAsync(a => a.Id == achievmentId);
+
+        if (achievment == null)
+            return null;
+
+        var existing = await _context.UserAchievments
+            .Include(ua => ua.Achievment)
+            .FirstOrDefaultAsync(ua => ua.UserId == userId && ua.AchievmentId == achievmentId);
+
+        if (existing != null)
+        {
+            return new UserAchievmentDto
+            {
+                Id = existing.Id,
+                UserId = existing.UserId,
+                AchievmentId = existing.AchievmentId,
+                UnlockedAt = existing.UnlockedAt
+            };
+        }
+
+        var userAchievment = new UserAchievment
+        {
+            UserId = userId,
+            AchievmentId = achievmentId,
+            UnlockedAt = DateTime.UtcNow
+        };
+
+        _context.UserAchievments.Add(userAchievment);
+        await _context.SaveChangesAsync();
+
+        return new UserAchievmentDto
+        {
+            Id = userAchievment.Id,
+            UserId = userAchievment.UserId,
+            AchievmentId = userAchievment.AchievmentId,
+            UnlockedAt = userAchievment.UnlockedAt
+        };
     }
 
     public async Task<List<ItemDto>> GetItemsAsync()
