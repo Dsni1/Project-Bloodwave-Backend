@@ -116,6 +116,7 @@ public static class ServiceExtensions
         services.AddScoped<IAuthService, AuthService>();
         services.AddScoped<IPlayerService, PlayerService>();
         services.AddScoped<IGameCrudService, GameCrudService>();
+        services.AddScoped<IMailService, SmtpMailService>();
         return services;
     }
 
