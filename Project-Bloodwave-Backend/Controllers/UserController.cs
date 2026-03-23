@@ -42,6 +42,28 @@ public class UserController : ControllerBase
         return result.Success ? Ok(result) : Unauthorized(result);
     }
 
+    [AllowAnonymous]
+    [HttpPost("forgot-password")]
+    public async Task<ActionResult<AuthResponseDto>> ForgotPassword([FromBody] ForgotPasswordRequestDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.ForgotPasswordAsync(dto);
+        return Ok(result);
+    }
+
+    [AllowAnonymous]
+    [HttpPost("reset-password")]
+    public async Task<ActionResult<AuthResponseDto>> ResetPassword([FromBody] ResetPasswordRequestDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.ResetPasswordAsync(dto);
+        return result.Success ? Ok(result) : BadRequest(result);
+    }
+
     [Authorize]
     [HttpPost("logout")]
     public async Task<ActionResult<AuthResponseDto>> Logout()

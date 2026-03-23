@@ -16,6 +16,8 @@ public interface IAuthService
     Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
     Task<AuthResponseDto> LogoutAsync(int userId);
     Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
+    Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto dto);
+    Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto);
 }
 
 /// <summary>
@@ -25,6 +27,8 @@ public class AuthService : IAuthService
 {
     private readonly BloodwaveDbContext _context;
     private readonly IConfiguration _configuration;
+    private readonly IMailService _mailService;
+    private readonly ILogger<AuthService> _logger;
     
     private const string InvalidCredentialsMessage = "Invalid username or password";
     private const string DefaultJwtKey = "your-super-secret-key-that-must-be-at-least-32-characters-long-for-hmacsha256";
@@ -32,14 +36,24 @@ public class AuthService : IAuthService
     private const string DefaultJwtAudience = "BloodwaveClient";
     private const int TokenExpirationHours = 24;
     private const int RefreshTokenExpirationDays = 7;
+    private const int PasswordResetExpirationMinutes = 30;
     private const int RefreshTokenByteLength = 64;
     private const string AdminRoleName = "Admin";
     private const string UserRoleName = "User";
+    private const string RefreshTokenUserAgent = "refresh-token";
+    private const string PasswordResetTokenUserAgent = "password-reset";
+    private const string ForgotPasswordGenericMessage = "If the email exists in our system, a password reset link has been sent.";
 
-    public AuthService(BloodwaveDbContext context, IConfiguration configuration)
+    public AuthService(
+        BloodwaveDbContext context,
+        IConfiguration configuration,
+        IMailService mailService,
+        ILogger<AuthService> logger)
     {
         _context = context;
         _configuration = configuration;
+        _mailService = mailService;
+        _logger = logger;
     }
 
     public async Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto)
@@ -55,6 +69,8 @@ public class AuthService : IAuthService
         var user = CreateUser(registerDto);
         _context.Users.Add(user);
         await _context.SaveChangesAsync();
+
+        await SendWelcomeEmailAsync(user);
 
         var refreshToken = await CreateRefreshTokenAsync(user.Id);
 
@@ -161,7 +177,8 @@ public class AuthService : IAuthService
             Token = GenerateRandomToken(),
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
-            CreatedByIp = "127.0.0.1"
+            CreatedByIp = "127.0.0.1",
+            UserAgent = RefreshTokenUserAgent
         };
 
         _context.RefreshTokens.Add(refreshToken);
@@ -176,7 +193,10 @@ public class AuthService : IAuthService
     {
         // Revoke old token
         var oldRefreshToken = await _context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.Token == oldToken && rt.UserId == userId);
+            .FirstOrDefaultAsync(rt =>
+                rt.Token == oldToken &&
+                rt.UserId == userId &&
+                rt.UserAgent != PasswordResetTokenUserAgent);
         
         if (oldRefreshToken != null)
         {
@@ -190,7 +210,8 @@ public class AuthService : IAuthService
             CreatedAt = DateTime.UtcNow,
             ExpiresAt = DateTime.UtcNow.AddDays(RefreshTokenExpirationDays),
             ReplacesToken = oldToken,
-            CreatedByIp = "127.0.0.1"
+            CreatedByIp = "127.0.0.1",
+            UserAgent = RefreshTokenUserAgent
         };
 
         _context.RefreshTokens.Add(newRefreshToken);
@@ -307,7 +328,9 @@ public class AuthService : IAuthService
         }
 
         var refreshToken = await _context.RefreshTokens
-            .FirstOrDefaultAsync(rt => rt.Token == refreshTokenDto.RefreshToken);
+            .FirstOrDefaultAsync(rt =>
+                rt.Token == refreshTokenDto.RefreshToken &&
+                rt.UserAgent != PasswordResetTokenUserAgent);
 
         if (refreshToken == null || !refreshToken.IsActive)
             return new AuthResponseDto 
@@ -336,6 +359,133 @@ public class AuthService : IAuthService
             ExpiresAt = newRefreshToken.ExpiresAt,
             User = MapToUserDto(user)
         };
+    }
+
+    public async Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Email))
+            return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
+
+        var normalizedEmail = dto.Email.Trim();
+        var user = await _context.Users
+            .FirstOrDefaultAsync(u => u.Email.ToLower() == normalizedEmail.ToLower() && u.IsActive);
+
+        if (user == null)
+            return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
+
+        var activeResetTokens = await _context.RefreshTokens
+            .Where(rt =>
+                rt.UserId == user.Id &&
+                rt.RevokedAt == null &&
+                rt.ExpiresAt > DateTime.UtcNow &&
+                rt.UserAgent == PasswordResetTokenUserAgent)
+            .ToListAsync();
+
+        foreach (var token in activeResetTokens)
+            token.RevokedAt = DateTime.UtcNow;
+
+        var resetToken = new RefreshToken
+        {
+            UserId = user.Id,
+            Token = GenerateRandomToken(),
+            CreatedAt = DateTime.UtcNow,
+            ExpiresAt = DateTime.UtcNow.AddMinutes(PasswordResetExpirationMinutes),
+            CreatedByIp = "password-reset",
+            UserAgent = PasswordResetTokenUserAgent
+        };
+
+        _context.RefreshTokens.Add(resetToken);
+        await _context.SaveChangesAsync();
+
+        var resetUrl = BuildResetUrl(resetToken.Token);
+        var body = $"Hi {user.Username},\n\n" +
+                   "We received a password reset request for your Bloodwave account.\n" +
+                   $"Reset link: {resetUrl}\n\n" +
+                   $"This link expires in {PasswordResetExpirationMinutes} minutes.\n" +
+                   "If you did not request this, you can safely ignore this email.";
+
+        await TrySendEmailAsync(user.Email, "Bloodwave - Password reset", body);
+
+        return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
+    }
+
+    public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto)
+    {
+        if (string.IsNullOrWhiteSpace(dto.Token) || string.IsNullOrWhiteSpace(dto.NewPassword))
+            return new AuthResponseDto { Success = false, Message = "Token and new password are required" };
+
+        var resetToken = await _context.RefreshTokens
+            .FirstOrDefaultAsync(rt =>
+                rt.Token == dto.Token &&
+                rt.UserAgent == PasswordResetTokenUserAgent &&
+                rt.RevokedAt == null &&
+                rt.ExpiresAt > DateTime.UtcNow);
+
+        if (resetToken == null)
+            return new AuthResponseDto { Success = false, Message = "Invalid or expired reset token" };
+
+        var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == resetToken.UserId && u.IsActive);
+        if (user == null)
+            return new AuthResponseDto { Success = false, Message = "User not found" };
+
+        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(dto.NewPassword);
+        user.UpdatedAt = DateTime.UtcNow;
+
+        resetToken.RevokedAt = DateTime.UtcNow;
+
+        var activeLoginTokens = await _context.RefreshTokens
+            .Where(rt =>
+                rt.UserId == user.Id &&
+                rt.RevokedAt == null &&
+                rt.ExpiresAt > DateTime.UtcNow &&
+                rt.UserAgent != PasswordResetTokenUserAgent)
+            .ToListAsync();
+
+        foreach (var token in activeLoginTokens)
+            token.RevokedAt = DateTime.UtcNow;
+
+        await _context.SaveChangesAsync();
+
+        var body = $"Hi {user.Username},\n\n" +
+                   "Your Bloodwave account password has been changed successfully.\n" +
+                   "If this was not you, secure your account immediately.";
+
+        await TrySendEmailAsync(user.Email, "Bloodwave - Password changed", body);
+
+        return new AuthResponseDto { Success = true, Message = "Password has been reset successfully" };
+    }
+
+    private async Task SendWelcomeEmailAsync(User user)
+    {
+        var body = $"Hi {user.Username},\n\n" +
+                   "Welcome to Bloodwave. Your registration was successful.\n" +
+                   "Have fun and good luck in the arena!";
+
+        await TrySendEmailAsync(user.Email, "Welcome to Bloodwave", body);
+    }
+
+    private async Task TrySendEmailAsync(string to, string subject, string text)
+    {
+        try
+        {
+            var result = await _mailService.SendEmailAsync(to, subject, text);
+            if (!result.IsSuccess)
+                _logger.LogWarning("Email send failed. To={To}, Subject={Subject}, Error={Error}", to, subject, result.Message);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Unexpected email send error. To={To}, Subject={Subject}", to, subject);
+        }
+    }
+
+    private string BuildResetUrl(string token)
+    {
+        var baseUrl = _configuration["App:PasswordResetUrl"];
+        if (string.IsNullOrWhiteSpace(baseUrl))
+            return token;
+
+        var separator = baseUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
+        return $"{baseUrl}{separator}token={Uri.EscapeDataString(token)}";
     }
 }
 

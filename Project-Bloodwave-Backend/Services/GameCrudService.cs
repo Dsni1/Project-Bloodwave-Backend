@@ -42,10 +42,17 @@ public interface IGameCrudService
 public class GameCrudService : IGameCrudService
 {
     private readonly BloodwaveDbContext _context;
+    private readonly IMailService _mailService;
+    private readonly ILogger<GameCrudService> _logger;
 
-    public GameCrudService(BloodwaveDbContext context)
+    public GameCrudService(
+        BloodwaveDbContext context,
+        IMailService mailService,
+        ILogger<GameCrudService> logger)
     {
         _context = context;
+        _mailService = mailService;
+        _logger = logger;
     }
 
     public async Task<List<AchievmentDto>> GetAchievmentsAsync()
@@ -479,6 +486,12 @@ public class GameCrudService : IGameCrudService
         if (user == null)
             return null;
 
+        var oldUsername = user.Username;
+        var oldEmail = user.Email;
+        var usernameChanged = !string.Equals(oldUsername, dto.Username, StringComparison.Ordinal);
+        var emailChanged = !string.Equals(oldEmail, dto.Email, StringComparison.OrdinalIgnoreCase);
+        var passwordChanged = !string.IsNullOrWhiteSpace(dto.Password);
+
         user.Username = dto.Username;
         user.Email = dto.Email;
 
@@ -491,6 +504,8 @@ public class GameCrudService : IGameCrudService
 
         await _context.SaveChangesAsync();
 
+        await NotifyUserUpdateAsync(user, oldUsername, oldEmail, usernameChanged, emailChanged, passwordChanged);
+
         return new UserDto
         {
             Id = user.Id,
@@ -498,6 +513,57 @@ public class GameCrudService : IGameCrudService
             Email = user.Email,
             CreatedAt = user.CreatedAt
         };
+    }
+
+    private async Task NotifyUserUpdateAsync(
+        User user,
+        string oldUsername,
+        string oldEmail,
+        bool usernameChanged,
+        bool emailChanged,
+        bool passwordChanged)
+    {
+        if (!usernameChanged && !emailChanged && !passwordChanged)
+            return;
+
+        var changes = new List<string>();
+
+        if (usernameChanged)
+            changes.Add($"- Username changed from '{oldUsername}' to '{user.Username}'");
+
+        if (emailChanged)
+            changes.Add($"- Email changed from '{oldEmail}' to '{user.Email}'");
+
+        if (passwordChanged)
+            changes.Add("- Password was changed");
+
+        var body = "A security-related update was made to your Bloodwave account.\n\n" +
+                   string.Join("\n", changes) +
+                   "\n\nIf this was not you, secure your account immediately.";
+
+        var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        if (!string.IsNullOrWhiteSpace(oldEmail))
+            recipients.Add(oldEmail);
+        if (!string.IsNullOrWhiteSpace(user.Email))
+            recipients.Add(user.Email);
+
+        foreach (var recipient in recipients)
+        {
+            try
+            {
+                var result = await _mailService.SendEmailAsync(
+                    recipient,
+                    "Bloodwave account update notification",
+                    body);
+
+                if (!result.IsSuccess)
+                    _logger.LogWarning("Failed to send profile-update email. To={Recipient}, Error={Error}", recipient, result.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected profile-update email error. To={Recipient}", recipient);
+            }
+        }
     }
 
     public async Task<bool> DeleteUserAsync(int userId)
