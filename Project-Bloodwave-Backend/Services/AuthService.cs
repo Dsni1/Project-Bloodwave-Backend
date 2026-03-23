@@ -397,16 +397,89 @@ public class AuthService : IAuthService
         _context.RefreshTokens.Add(resetToken);
         await _context.SaveChangesAsync();
 
-        var resetUrl = BuildResetUrl(resetToken.Token);
-        var body = $"Hi {user.Username},\n\n" +
-                   "We received a password reset request for your Bloodwave account.\n" +
-                   $"Reset link: {resetUrl}\n\n" +
-                   $"This link expires in {PasswordResetExpirationMinutes} minutes.\n" +
-                   "If you did not request this, you can safely ignore this email.";
+        var resetUrl = BuildResetUrl(resetToken.Token); // pl: https://.../reset-password?token=...
+        var htmlBody = BuildPasswordResetEmailHtml(user.Username, resetUrl, PasswordResetExpirationMinutes);
 
-        await TrySendEmailAsync(user.Email, "Bloodwave - Password reset", body);
+        await TrySendEmailAsync(
+            user.Email,
+            "Bloodwave - Password reset",
+            htmlBody,
+            isHtml: true
+        );
 
         return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
+    }
+
+    private static string BuildPasswordResetEmailHtml(string username, string resetUrl, int expiresMinutes)
+    {
+        var safeUsername = WebUtility.HtmlEncode(username);
+        var safeResetUrl = WebUtility.HtmlEncode(resetUrl);
+
+        return $@"
+        <!doctype html>
+        <html lang=""en"">
+        <head>
+        <meta charset=""utf-8"" />
+        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+        <title>Bloodwave Password Reset</title>
+        </head>
+        <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
+        <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
+            <tr>
+            <td align=""center"">
+                <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
+                <tr>
+                    <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
+                    <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
+                        Bloodwave
+                    </div>
+                    <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
+                        Restore Access
+                    </div>
+                    </td>
+                </tr>
+
+                <tr>
+                    <td style=""padding:30px;"">
+                    <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
+
+                    <p style=""margin:0 0 16px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
+                        We received a password reset request for your Bloodwave account.
+                    </p>
+
+                    <table role=""presentation"" cellspacing=""0"" cellpadding=""0"" style=""margin:22px 0 20px 0;"">
+                        <tr>
+                        <td align=""center"" bgcolor=""#8B0000"" style=""border:1px solid rgba(212,175,55,0.55);"">
+                            <a href=""{safeResetUrl}"" target=""_blank""
+                            style=""display:inline-block;padding:14px 24px;color:#fef8e8;text-decoration:none;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;"">
+                            Reset Password
+                            </a>
+                        </td>
+                        </tr>
+                    </table>
+
+                    <p style=""margin:0 0 10px 0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.78);"">
+                        This link expires in <strong style=""color:#D4AF37;"">{expiresMinutes} minutes</strong>.
+                    </p>
+
+                    <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.62);"">
+                        If you did not request this, you can safely ignore this email.
+                    </p>
+
+                    <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
+
+                    <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
+                        If the button does not work, copy and paste this link into your browser:<br />
+                        <a href=""{safeResetUrl}"" target=""_blank"" style=""color:#D4AF37;word-break:break-all;"">{safeResetUrl}</a>
+                    </p>
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+        </table>
+        </body>
+        </html>";
     }
 
     public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto)
@@ -446,22 +519,128 @@ public class AuthService : IAuthService
 
         await _context.SaveChangesAsync();
 
-        var body = $"Hi {user.Username},\n\n" +
-                   "Your Bloodwave account password has been changed successfully.\n" +
-                   "If this was not you, secure your account immediately.";
+        var htmlBody = BuildPasswordChangedEmailHtml(user.Username);
 
-        await TrySendEmailAsync(user.Email, "Bloodwave - Password changed", body);
+        await TrySendEmailAsync(
+            user.Email,
+            "Bloodwave - Password changed",
+            htmlBody,
+            isHtml: true
+        );
 
         return new AuthResponseDto { Success = true, Message = "Password has been reset successfully" };
     }
 
+    private static string BuildPasswordChangedEmailHtml(string username)
+    {
+        var safeUsername = WebUtility.HtmlEncode(username);
+
+        return $@"
+            <!doctype html>
+            <html lang=""en"">
+            <head>
+            <meta charset=""utf-8"" />
+            <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+            <title>Bloodwave Password Changed</title>
+            </head>
+            <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
+            <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
+                <tr>
+                <td align=""center"">
+                    <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
+                    <tr>
+                        <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
+                        <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
+                            Bloodwave
+                        </div>
+                        <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
+                            Security Notice
+                        </div>
+                        </td>
+                    </tr>
+                    <tr>
+                        <td style=""padding:30px;"">
+                        <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
+                        <p style=""margin:0 0 12px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
+                            Your Bloodwave account password has been changed successfully.
+                        </p>
+                        <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.72);"">
+                            If this was not you, secure your account immediately.
+                        </p>
+                        <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
+                        <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
+                            This is an automated security message from Bloodwave.
+                        </p>
+                        </td>
+                    </tr>
+                    </table>
+                </td>
+                </tr>
+            </table>
+            </body>
+            </html>";
+    }
+
     private async Task SendWelcomeEmailAsync(User user)
     {
-        var body = $"Hi {user.Username},\n\n" +
-                   "Welcome to Bloodwave. Your registration was successful.\n" +
-                   "Have fun and good luck in the arena!";
+        var htmlBody = BuildWelcomeEmailHtml(user.Username);
 
-        await TrySendEmailAsync(user.Email, "Welcome to Bloodwave", body);
+        await TrySendEmailAsync(
+            user.Email,
+            "Welcome to Bloodwave",
+            htmlBody,
+            isHtml: true
+        );
+    }
+
+    private static string BuildWelcomeEmailHtml(string username)
+    {
+        var safeUsername = WebUtility.HtmlEncode(username);
+
+        return $@"
+        <!doctype html>
+        <html lang=""en"">
+        <head>
+        <meta charset=""utf-8"" />
+        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+        <title>Welcome to Bloodwave</title>
+        </head>
+        <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
+        <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
+            <tr>
+            <td align=""center"">
+                <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
+                <tr>
+                    <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
+                    <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
+                        Bloodwave
+                    </div>
+                    <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
+                        Welcome To The Covenant
+                    </div>
+                    </td>
+                </tr>
+                <tr>
+                    <td style=""padding:30px;"">
+                    <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
+                    <p style=""margin:0 0 12px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
+                        Welcome to Bloodwave. Your registration was successful.
+                    </p>
+                    <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.72);"">
+                        Have fun and good luck in the arena.
+                    </p>
+                    <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
+                    <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
+                        We are glad to have you with us.
+                    </p>
+                    </td>
+                </tr>
+                </table>
+            </td>
+            </tr>
+        </table>
+        </body>
+        </html>";
     }
 
     private async Task TrySendEmailAsync(string to, string subject, string text)
