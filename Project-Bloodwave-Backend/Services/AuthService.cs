@@ -403,8 +403,8 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Bloodwave - Password reset",
-            htmlBody,
-            isHtml: true
+            text: "",
+            html: htmlBody
         );
 
         return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
@@ -524,8 +524,8 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Bloodwave - Password changed",
-            htmlBody,
-            isHtml: true
+            text: "",
+            html: htmlBody
         );
 
         return new AuthResponseDto { Success = true, Message = "Password has been reset successfully" };
@@ -588,8 +588,8 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Welcome to Bloodwave",
-            htmlBody,
-            isHtml: true
+            text: "",
+            html: htmlBody
         );
     }
 
@@ -643,11 +643,11 @@ public class AuthService : IAuthService
         </html>";
     }
 
-    private async Task TrySendEmailAsync(string to, string subject, string text)
+    private async Task TrySendEmailAsync(string to, string subject, string text = "", string? html = null)
     {
         try
         {
-            var result = await _mailService.SendEmailAsync(to, subject, text);
+            var result = await _mailService.SendEmailAsync(to, subject, text, html);
             if (!result.IsSuccess)
                 _logger.LogWarning("Email send failed. To={To}, Subject={Subject}, Error={Error}", to, subject, result.Message);
         }
