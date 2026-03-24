@@ -414,11 +414,9 @@ public class AuthService : IAuthService
     private static string BuildPasswordResetEmailHtml(string username, string resetUrl, int expiresMinutes)
     {
         var safeUsername = WebUtility.HtmlEncode(username);
-        var safeResetUrl = WebUtility.HtmlEncode(resetUrl);
         var bodyHtml = $@"
             <p>We received a password reset request for your account.</p>
             <p>This link will expire in <strong>{expiresMinutes} minutes</strong>.</p>
-            <p style=""margin-top:14px;font-size:12px;color:#9a9a9a;word-break:break-all;"">{safeResetUrl}</p>
             <p style=""margin-top:14px;color:#b6b6b6;font-size:12px;"">If you did not request this, you can ignore this email.</p>";
 
         return BuildMinimalEmailHtml(
@@ -426,6 +424,8 @@ public class AuthService : IAuthService
             subtitle: "Password Reset",
             greeting: $"Hello {safeUsername},",
             bodyHtml: bodyHtml,
+            actionText: "Reset Password",
+            actionUrl: resetUrl,
             addContactUs: true);
     }
 
@@ -589,7 +589,8 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Account Update",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml);
+            bodyHtml: bodyHtml,
+            addContactUs: true);
     }
 
     private static string BuildMinimalEmailHtml(
