@@ -2,6 +2,7 @@ using Project_Bloodwave_Backend.Data;
 using Project_Bloodwave_Backend.DTOs;
 using Project_Bloodwave_Backend.Models;
 using System.IdentityModel.Tokens.Jwt;
+using System.Net;
 using System.Security.Claims;
 using System.Security.Cryptography;
 using System.Text;
@@ -403,8 +404,7 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Bloodwave - Password reset",
-            htmlBody,
-            isHtml: true
+            htmlBody
         );
 
         return new AuthResponseDto { Success = true, Message = ForgotPasswordGenericMessage };
@@ -524,8 +524,7 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Bloodwave - Password changed",
-            htmlBody,
-            isHtml: true
+            htmlBody
         );
 
         return new AuthResponseDto { Success = true, Message = "Password has been reset successfully" };
@@ -588,8 +587,7 @@ public class AuthService : IAuthService
         await TrySendEmailAsync(
             user.Email,
             "Welcome to Bloodwave",
-            htmlBody,
-            isHtml: true
+            htmlBody
         );
     }
 
