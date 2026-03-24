@@ -425,7 +425,8 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Password Reset",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml);
+            bodyHtml: bodyHtml,
+            addContactUs: true);
     }
 
     public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto)
@@ -489,7 +490,8 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Security Notice",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml);
+            bodyHtml: bodyHtml,
+            addContactUs: true);
     }
 
     private async Task SendWelcomeEmailAsync(User user)
@@ -560,7 +562,8 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Email Changed",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml);
+            bodyHtml: bodyHtml,
+            addContactUs: true);
     }
 
     public static string BuildAccountUpdatedEmailHtml(string username, string oldUsername, bool usernameChanged, bool passwordChanged)
@@ -595,7 +598,8 @@ public class AuthService : IAuthService
         string greeting,
         string bodyHtml,
         string? actionText = null,
-        string? actionUrl = null)
+        string? actionUrl = null,
+        bool addContactUs = false)
     {
         var safeTitle = WebUtility.HtmlEncode(title);
         var safeSubtitle = WebUtility.HtmlEncode(subtitle);
@@ -604,7 +608,11 @@ public class AuthService : IAuthService
         var safeActionUrl = string.IsNullOrWhiteSpace(actionUrl) ? null : WebUtility.HtmlEncode(actionUrl);
         var actionBlock = safeActionText is null || safeActionUrl is null
             ? string.Empty
-            : $@"<div style=""margin-top:28px;text-align:center;""><a href=""{safeActionUrl}"" style=""display:inline-block;background:linear-gradient(135deg, #d4af37 0%, #e8c547 100%);color:#171717;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(212,175,55,0.3);transition:all 0.3s ease;"">{safeActionText}</a></div>";
+            : $@"<div style=""margin-top:28px;text-align:center;""><a href=""{safeActionUrl}"" style=""display:inline-block;background:linear-gradient(135deg, #9B2C2C 0%, #B22C2C 100%);color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(155,44,44,0.3);transition:all 0.3s ease;"">{safeActionText}</a></div>";
+        
+        var contactUsBlock = addContactUs
+            ? @"<div style=""margin-top:16px;text-align:center;""><a href=""mailto:busai.dani@gmail.com,gergoagajdos@gmail.com,padarzsolti@gmail.com?subject=Support%20Request"" style=""display:inline-block;background:linear-gradient(135deg, #9B2C2C 0%, #B22C2C 100%);color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(155,44,44,0.3);transition:all 0.3s ease;"" >Contact Us</a></div>"
+            : string.Empty;
 
         return $@"<!DOCTYPE html>
 <html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
@@ -617,11 +625,11 @@ public class AuthService : IAuthService
         body {{ font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
         .email-header {{ text-align: center; }}
         .email-title {{ font-size: 24px; font-weight: 700; letter-spacing: 0.3px; color: #ffffff; margin: 0; }}
-        .email-subtitle {{ font-size: 13px; color: #d4af37; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 6px; font-weight: 600; }}
+        .email-subtitle {{ font-size: 13px; color: #B22C2C; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 6px; font-weight: 600; }}
         .email-greeting {{ font-size: 16px; color: #ffffff; font-weight: 500; margin: 0 0 14px 0; }}
         .email-body {{ font-size: 14px; line-height: 1.7; color: #d7d7d7; }}
         .email-body p {{ margin: 0 0 12px 0; }}
-        .email-body strong {{ color: #d4af37; font-weight: 600; }}
+        .email-body strong {{ color: #B22C2C; font-weight: 600; }}
     </style>
 </head>
 <body style=""margin:0;padding:24px 12px;background:#0b0b0b;font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f0f0f0;"">
@@ -642,6 +650,7 @@ public class AuthService : IAuthService
                                 {bodyHtml}
                             </div>
                             {actionBlock}
+                            {contactUsBlock}
                         </td>
                     </tr>
                     <tr>
