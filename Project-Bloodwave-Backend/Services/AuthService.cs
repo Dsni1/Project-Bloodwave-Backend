@@ -425,9 +425,7 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Password Reset",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml,
-            actionText: "Reset Password",
-            actionUrl: resetUrl);
+            bodyHtml: bodyHtml);
     }
 
     public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto)
@@ -491,9 +489,7 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Security Notice",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml,
-            actionText: "Contact Support",
-            actionUrl: "https://bloodwave.game/support");
+            bodyHtml: bodyHtml);
     }
 
     private async Task SendWelcomeEmailAsync(User user)
@@ -564,9 +560,7 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Email Changed",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml,
-            actionText: "Contact Support",
-            actionUrl: "https://bloodwave.game/support");
+            bodyHtml: bodyHtml);
     }
 
     public static string BuildAccountUpdatedEmailHtml(string username, string oldUsername, bool usernameChanged, bool passwordChanged)
@@ -592,9 +586,7 @@ public class AuthService : IAuthService
             title: "Bloodwave",
             subtitle: "Account Update",
             greeting: $"Hello {safeUsername},",
-            bodyHtml: bodyHtml,
-            actionText: "Contact Support",
-            actionUrl: "https://bloodwave.game/support");
+            bodyHtml: bodyHtml);
     }
 
     private static string BuildMinimalEmailHtml(
@@ -612,35 +604,48 @@ public class AuthService : IAuthService
         var safeActionUrl = string.IsNullOrWhiteSpace(actionUrl) ? null : WebUtility.HtmlEncode(actionUrl);
         var actionBlock = safeActionText is null || safeActionUrl is null
             ? string.Empty
-            : $@"<div style=""margin-top:24px;""><a href=""{safeActionUrl}"" style=""display:inline-block;background:#d4af37;color:#171717;text-decoration:none;padding:10px 18px;border-radius:6px;font-weight:600;font-size:13px;"">{safeActionText}</a></div>";
+            : $@"<div style=""margin-top:28px;text-align:center;""><a href=""{safeActionUrl}"" style=""display:inline-block;background:linear-gradient(135deg, #d4af37 0%, #e8c547 100%);color:#171717;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(212,175,55,0.3);transition:all 0.3s ease;"">{safeActionText}</a></div>";
 
         return $@"<!DOCTYPE html>
 <html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
 <head>
     <meta charset=""UTF-8"" />
     <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <link href=""https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap"" rel=""stylesheet"" />
     <title>{safeTitle} - {safeSubtitle}</title>
+    <style>
+        body {{ font-family: 'Poppins', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }}
+        .email-header {{ text-align: center; }}
+        .email-title {{ font-size: 24px; font-weight: 700; letter-spacing: 0.3px; color: #ffffff; margin: 0; }}
+        .email-subtitle {{ font-size: 13px; color: #d4af37; text-transform: uppercase; letter-spacing: 1.2px; margin-top: 6px; font-weight: 600; }}
+        .email-greeting {{ font-size: 16px; color: #ffffff; font-weight: 500; margin: 0 0 14px 0; }}
+        .email-body {{ font-size: 14px; line-height: 1.7; color: #d7d7d7; }}
+        .email-body p {{ margin: 0 0 12px 0; }}
+        .email-body strong {{ color: #d4af37; font-weight: 600; }}
+    </style>
 </head>
-<body style=""margin:0;padding:24px 12px;background:#0b0b0b;font-family:Segoe UI,Arial,sans-serif;color:#f0f0f0;"">
+<body style=""margin:0;padding:24px 12px;background:#0b0b0b;font-family:'Poppins',-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;color:#f0f0f0;"">
     <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" width=""100%"">
         <tr>
             <td align=""center"">
-                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" width=""100%"" style=""max-width:560px;background:#141414;border:1px solid #2a2a2a;border-radius:10px;overflow:hidden;"">
+                <table role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"" width=""100%"" style=""max-width:560px;background:#141414;border:1px solid #2a2a2a;border-radius:12px;overflow:hidden;box-shadow:0 4px 12px rgba(0,0,0,0.4);"">
                     <tr>
-                        <td style=""padding:22px 24px;border-bottom:1px solid #2a2a2a;"">
-                            <div style=""font-size:22px;font-weight:700;letter-spacing:0.5px;color:#ffffff;"">{safeTitle}</div>
-                            <div style=""margin-top:4px;font-size:12px;color:#d4af37;text-transform:uppercase;letter-spacing:1px;"">{safeSubtitle}</div>
+                        <td style=""padding:26px 24px;border-bottom:1px solid #2a2a2a;text-align:center;"">
+                            <div class=""email-title"">{safeTitle}</div>
+                            <div class=""email-subtitle"">{safeSubtitle}</div>
                         </td>
                     </tr>
                     <tr>
-                        <td style=""padding:22px 24px;font-size:14px;line-height:1.6;color:#d7d7d7;"">
-                            <p style=""margin:0 0 12px 0;color:#ffffff;font-size:15px;"">{safeGreeting}</p>
-                            {bodyHtml}
+                        <td style=""padding:26px 24px;text-align:left;"">
+                            <p class=""email-greeting"">{safeGreeting}</p>
+                            <div class=""email-body"">
+                                {bodyHtml}
+                            </div>
                             {actionBlock}
                         </td>
                     </tr>
                     <tr>
-                        <td style=""padding:14px 24px;border-top:1px solid #2a2a2a;font-size:11px;color:#9a9a9a;"">
+                        <td style=""padding:16px 24px;border-top:1px solid #2a2a2a;font-size:12px;color:#9a9a9a;text-align:center;letter-spacing:0.3px;"">
                             Bloodwave Team
                         </td>
                     </tr>
