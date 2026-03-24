@@ -416,71 +416,63 @@ public class AuthService : IAuthService
         var safeUsername = WebUtility.HtmlEncode(username);
         var safeResetUrl = WebUtility.HtmlEncode(resetUrl);
 
-        return $@"
-        <!doctype html>
-        <html lang=""en"">
-        <head>
-        <meta charset=""utf-8"" />
-        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
-        <title>Bloodwave Password Reset</title>
-        </head>
-        <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
-        <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
-            <tr>
-            <td align=""center"">
-                <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
-                <tr>
-                    <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
-                    <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
-                        Bloodwave
-                    </div>
-                    <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
-                        Restore Access
-                    </div>
-                    </td>
-                </tr>
-
-                <tr>
-                    <td style=""padding:30px;"">
-                    <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
-
-                    <p style=""margin:0 0 16px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
-                        We received a password reset request for your Bloodwave account.
-                    </p>
-
-                    <table role=""presentation"" cellspacing=""0"" cellpadding=""0"" style=""margin:22px 0 20px 0;"">
-                        <tr>
-                        <td align=""center"" bgcolor=""#8B0000"" style=""border:1px solid rgba(212,175,55,0.55);"">
-                            <a href=""{safeResetUrl}"" target=""_blank""
-                            style=""display:inline-block;padding:14px 24px;color:#fef8e8;text-decoration:none;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;"">
-                            Reset Password
-                            </a>
-                        </td>
-                        </tr>
-                    </table>
-
-                    <p style=""margin:0 0 10px 0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.78);"">
-                        This link expires in <strong style=""color:#D4AF37;"">{expiresMinutes} minutes</strong>.
-                    </p>
-
-                    <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.62);"">
-                        If you did not request this, you can safely ignore this email.
-                    </p>
-
-                    <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
-
-                    <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
-                        If the button does not work, copy and paste this link into your browser:<br />
-                        <a href=""{safeResetUrl}"" target=""_blank"" style=""color:#D4AF37;word-break:break-all;"">{safeResetUrl}</a>
-                    </p>
-                    </td>
-                </tr>
-                </table>
-            </td>
-            </tr>
-        </table>
-        </body>
-        </html>";
+        return $@"<!DOCTYPE html>
+<html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
+<head>
+    <meta charset=""UTF-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>Reset Your Password - Bloodwave</title>
+    <style type=""text/css"">
+        body {{margin: 0; padding: 0; min-width: 100%!important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif; font-size: 16px; line-height: 1.5;}}
+        table {{border-collapse: collapse; border-spacing: 0;}}
+        img {{max-width: 100%; height: auto; display: block;}}
+        .container {{width: 100%; max-width: 600px; margin: 0 auto;}}
+        .header {{text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2a1a1a 100%); border-bottom: 3px solid #d4af37;}}
+        .header h1 {{margin: 0; color: #ffffff; font-size: 32px; font-weight: 600; letter-spacing: 2px;}}
+        .header p {{margin: 8px 0 0 0; color: #d4af37; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;}}
+        .body-content {{background: #0f0f0f; color: #e0e0e0; padding: 30px;}}
+        .greeting {{font-size: 18px; color: #ffffff; margin: 0 0 20px 0; font-weight: 500;}}
+        .message {{color: #cccccc; margin: 15px 0; line-height: 1.6;}}
+        .button-wrapper {{text-align: center; margin: 30px 0;}}
+        .button {{background: linear-gradient(135deg, #d4af37 0%, #c69c2a 100%); color: #000000; padding: 14px 36px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 14px; letter-spacing: 1px; text-transform: uppercase; display: inline-block; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);}}
+        .warning {{background: #2a1a1a; padding: 15px; border-left: 3px solid #d4af37; margin: 20px 0; color: #e0e0e0; font-size: 13px;}}
+        .expiry {{color: #d4af37; font-weight: 600;}}
+        .footer {{background: #1a1a1a; color: #888888; font-size: 12px; padding: 20px; text-align: center; border-top: 1px solid #333333;}}
+        .footer a {{color: #d4af37; text-decoration: none;}}
+        hr {{border: none; border-top: 1px solid #333333; margin: 20px 0;}}
+    </style>
+</head>
+<body>
+    <table class=""container"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+        <tr><td class=""header"">
+            <h1>⚔ BLOODWAVE</h1>
+            <p>Password Recovery</p>
+        </td></tr>
+        <tr><td class=""body-content"">
+            <p class=""greeting"">Hello {safeUsername},</p>
+            <p class=""message"">We received a request to reset the password for your Bloodwave account. If this wasn't you, you can safely ignore this email.</p>
+            <div class=""button-wrapper"">
+                <a href=""{safeResetUrl}"" class=""button"">Reset Password</a>
+            </div>
+            <p class=""message"" style=""font-size: 13px; color: #999999;"">
+                Or copy and paste this link into your browser:<br />
+                <span style=""word-break: break-all; color: #d4af37;"">{safeResetUrl}</span>
+            </p>
+            <div class=""warning"">
+                <strong>⏳ Expires in:</strong> <span class=""expiry"">{expiresMinutes} minutes</span>. Act quickly!
+            </div>
+            <hr />
+            <p class=""message"" style=""font-size: 12px; color: #888888;"">
+                For security reasons, never share this link with anyone. Bloodwave support will never ask for your password.
+            </p>
+        </td></tr>
+        <tr><td class=""footer"">
+            <p style=""margin: 0 0 8px 0;"">&copy; 2026 Bloodwave. All rights reserved.</p>
+            <p style=""margin: 0;""><a href=""https://bloodwave.game"">Visit our website</a> | <a href=""https://bloodwave.game/support"">Support</a></p>
+        </td></tr>
+    </table>
+</body>
+</html>";
     }
 
     public async Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto)
@@ -536,50 +528,69 @@ public class AuthService : IAuthService
     {
         var safeUsername = WebUtility.HtmlEncode(username);
 
-        return $@"
-            <!doctype html>
-            <html lang=""en"">
-            <head>
-            <meta charset=""utf-8"" />
-            <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
-            <title>Bloodwave Password Changed</title>
-            </head>
-            <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
-            <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
-                <tr>
-                <td align=""center"">
-                    <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
-                    <tr>
-                        <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
-                        <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
-                            Bloodwave
-                        </div>
-                        <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
-                            Security Notice
-                        </div>
-                        </td>
-                    </tr>
-                    <tr>
-                        <td style=""padding:30px;"">
-                        <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
-                        <p style=""margin:0 0 12px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
-                            Your Bloodwave account password has been changed successfully.
-                        </p>
-                        <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.72);"">
-                            If this was not you, secure your account immediately.
-                        </p>
-                        <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
-                        <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
-                            This is an automated security message from Bloodwave.
-                        </p>
-                        </td>
-                    </tr>
-                    </table>
-                </td>
-                </tr>
-            </table>
-            </body>
-            </html>";
+        return $@"<!DOCTYPE html>
+<html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
+<head>
+    <meta charset=""UTF-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>Password Changed - Bloodwave</title>
+    <style type=""text/css"">
+        body {{margin: 0; padding: 0; min-width: 100%!important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; font-size: 16px; line-height: 1.5;}}
+        table {{border-collapse: collapse; border-spacing: 0;}}
+        img {{max-width: 100%; height: auto; display: block;}}
+        .container {{width: 100%; max-width: 600px; margin: 0 auto;}}
+        .header {{text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2a1a1a 100%); border-bottom: 3px solid #ff6b6b;}}
+        .header h1 {{margin: 0; color: #ffffff; font-size: 32px; font-weight: 600; letter-spacing: 2px;}}
+        .header p {{margin: 8px 0 0 0; color: #ff6b6b; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;}}
+        .body-content {{background: #0f0f0f; color: #e0e0e0; padding: 30px;}}
+        .greeting {{font-size: 18px; color: #ffffff; margin: 0 0 20px 0; font-weight: 500;}}
+        .message {{color: #cccccc; margin: 15px 0; line-height: 1.6;}}
+        .success {{background: rgba(76, 175, 80, 0.1); border-left: 3px solid #4cb50; padding: 15px; margin: 20px 0; color: #90ee90; font-size: 13px;}}
+        .alert {{background: #2a1a1a; border-left: 3px solid #ff6b6b; padding: 15px; margin: 20px 0; color: #e0e0e0; font-size: 13px;}}
+        .alert strong {{color: #ff6b6b;}}
+        .footer {{background: #1a1a1a; color: #888888; font-size: 12px; padding: 20px; text-align: center; border-top: 1px solid #333333;}}
+        .footer a {{color: #d4af37; text-decoration: none;}}
+        hr {{border: none; border-top: 1px solid #333333; margin: 20px 0;}}
+    </style>
+</head>
+<body>
+    <table class=""container"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+        <tr><td class=""header"">
+            <h1>✔ BLOODWAVE</h1>
+            <p>Security Update</p>
+        </td></tr>
+        <tr><td class=""body-content"">
+            <p class=""greeting"">Hello {safeUsername},</p>
+            <p class=""message"">Your Bloodwave account password has been successfully changed.</p>
+            
+            <div class=""success"">
+                ✓ Your password has been updated successfully
+            </div>
+            
+            <p class=""message"">If you did not make this change, your account may be compromised. Please:</p>
+            <p class=""message"" style=""margin-left: 20px; color: #ff9999;"">
+                • Immediately contact our <a href=""https://bloodwave.game/support"" style=""color: #d4af37; text-decoration: none;"">support team</a><br />
+                • Change your password again<br />
+                • Review your account activity
+            </p>
+            
+            <hr />
+            
+            <div class=""alert"">
+                🔒 <strong>Security Tip:</strong> Never share your password with anyone. Our team will never ask for it.
+            </div>
+            
+            <p class=""message"" style=""font-size: 12px; color: #888888;"">
+                If you have any questions or didn't authorize this change, please contact our support team immediately.
+            </p>
+        </td></tr>
+        <tr><td class=""footer"">
+            <p style=""margin: 0 0 8px 0;"">&copy; 2026 Bloodwave. All rights reserved.</p>
+            <p style=""margin: 0;""><a href=""https://bloodwave.game"">Visit our website</a> | <a href=""https://bloodwave.game/support"">Support</a></p>
+        </td></tr>
+    </table>
+</body>
+</html>";
     }
 
     private async Task SendWelcomeEmailAsync(User user)
@@ -598,50 +609,107 @@ public class AuthService : IAuthService
     {
         var safeUsername = WebUtility.HtmlEncode(username);
 
-        return $@"
-        <!doctype html>
-        <html lang=""en"">
-        <head>
-        <meta charset=""utf-8"" />
-        <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
-        <title>Welcome to Bloodwave</title>
-        </head>
-        <body style=""margin:0;padding:0;background:#080606;font-family:Montserrat,Segoe UI,Arial,sans-serif;color:#f2eaea;"">
-        <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""background:#080606;padding:28px 12px;"">
-            <tr>
-            <td align=""center"">
-                <table role=""presentation"" width=""100%"" cellspacing=""0"" cellpadding=""0"" style=""max-width:560px;background:linear-gradient(160deg,rgba(22,8,8,0.98) 0%,rgba(12,4,4,1) 50%,rgba(22,6,6,0.98) 100%);border:1px solid rgba(139,0,0,0.45);"">
-                <tr>
-                    <td style=""padding:34px 30px 24px 30px;text-align:center;border-bottom:1px solid rgba(139,0,0,0.3);"">
-                    <div style=""font-family:'Cormorant Garamond',Georgia,serif;font-size:40px;letter-spacing:6px;color:#ffffff;text-transform:uppercase;text-shadow:0 0 24px rgba(139,0,0,0.45);"">
-                        Bloodwave
-                    </div>
-                    <div style=""margin-top:8px;font-size:10px;letter-spacing:4px;color:rgba(212,175,55,0.72);text-transform:uppercase;"">
-                        Welcome To The Covenant
-                    </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td style=""padding:30px;"">
-                    <p style=""margin:0 0 14px 0;font-size:14px;line-height:1.7;color:#f2eaea;"">Hi {safeUsername},</p>
-                    <p style=""margin:0 0 12px 0;font-size:14px;line-height:1.8;color:rgba(255,255,255,0.86);"">
-                        Welcome to Bloodwave. Your registration was successful.
-                    </p>
-                    <p style=""margin:0;font-size:13px;line-height:1.8;color:rgba(255,255,255,0.72);"">
-                        Have fun and good luck in the arena.
-                    </p>
-                    <div style=""margin-top:22px;border-top:1px solid rgba(212,175,55,0.35);""></div>
-                    <p style=""margin:14px 0 0 0;font-size:11px;line-height:1.7;color:rgba(255,255,255,0.45);"">
-                        We are glad to have you with us.
-                    </p>
-                    </td>
-                </tr>
-                </table>
-            </td>
-            </tr>
-        </table>
-        </body>
-        </html>";
+        return $@"<!DOCTYPE html>
+<html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
+<head>
+    <meta charset=""UTF-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>Welcome to Bloodwave</title>
+    <style type=""text/css"">
+        body {{margin: 0; padding: 0; min-width: 100%!important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen', 'Ubuntu', sans-serif; font-size: 16px;}}
+        table {{border-collapse: collapse; border-spacing: 0;}}
+        img {{max-width: 100%; height: auto; display: block;}}
+        .container {{width: 100%; max-width: 600px; margin: 0 auto;}}
+        .header {{text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2a1a1a 100%); border-bottom: 3px solid #d4af37;}}
+        .header h1 {{margin: 0; color: #ffffff; font-size: 36px; font-weight: 700; letter-spacing: 2px;}}
+        .header .tagline {{margin: 10px 0 0 0; color: #d4af37; font-size: 13px; letter-spacing: 2px; text-transform: uppercase;}}
+        .hero {{text-align: center; padding: 40px 20px; background: linear-gradient(135deg, #0f0f0f 0%, #1a0f0f 100%);}}
+        .hero .welcome {{font-size: 28px; color: #d4af37; margin: 0 0 10px 0; font-weight: 700;}}
+        .hero .username {{font-size: 22px; color: #ffffff; margin: 0; font-weight: 600;}}
+        .body-content {{background: #0f0f0f; color: #e0e0e0; padding: 30px;}}
+        .section {{margin: 25px 0;}}
+        .section-title {{color: #d4af37; font-size: 14px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 12px;}}
+        .message {{color: #cccccc; margin: 12px 0; line-height: 1.6; font-size: 14px;}}
+        .feature {{background: rgba(212, 175, 55, 0.05); border-left: 3px solid #d4af37; padding: 12px 15px; margin: 10px 0; color: #e0e0e0; font-size: 13px;}}
+        .feature-list {{list-style: none; padding: 0; margin: 15px 0;}}
+        .feature-list li {{padding: 8px 0; color: #cccccc; font-size: 13px;}}
+        .feature-list li:before {{content: ""▸ ""; color: #d4af37; margin-right: 8px; font-weight: bold;}}
+        .button-wrapper {{text-align: center; margin: 30px 0;}}
+        .button {{background: linear-gradient(135deg, #d4af37 0%, #c69c2a 100%); color: #000000; padding: 12px 32px; text-decoration: none; border-radius: 4px; font-weight: 600; font-size: 13px; letter-spacing: 1px; text-transform: uppercase; display: inline-block; box-shadow: 0 4px 15px rgba(212, 175, 55, 0.3);}}
+        .divider {{border: none; border-top: 1px solid #333333; margin: 25px 0;}}
+        .footer {{background: #1a1a1a; color: #888888; font-size: 11px; padding: 20px; text-align: center; border-top: 1px solid #333333;}}
+        .footer a {{color: #d4af37; text-decoration: none;}}
+        .footer p {{margin: 5px 0;}}
+        .social {{margin-top: 10px;}}
+        .social a {{color: #d4af37; text-decoration: none; margin: 0 10px; font-size: 12px;}}
+    </style>
+</head>
+<body>
+    <table class=""container"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+        <tr><td class=""header"">
+            <h1>⚔ BLOODWAVE ⚔</h1>
+            <p class=""tagline"">Welcome to the Covenant</p>
+        </td></tr>
+        
+        <tr><td class=""hero"">
+            <div class=""welcome"">Welcome to the Arena</div>
+            <div class=""username"">{safeUsername}</div>
+        </td></tr>
+        
+        <tr><td class=""body-content"">
+            <p class=""message"" style=""margin-top: 0;"">
+                Your journey begins now. Your registration was successful, and your warrior is ready to enter the battlefield.
+            </p>
+            
+            <div class=""section"">
+                <div class=""section-title"">🗡 Ready to Fight?</div>
+                <div class=""message"">
+                    Log in to your account and prepare for battle. Sharpen your skills, collect powerful weapons, and prove your worth in the arena.
+                </div>
+                <ul class=""feature-list"">
+                    <li>Customize your warrior</li>
+                    <li>Master multiple weapons</li>
+                    <li>Climb the leaderboards</li>
+                    <li>Unlock achievements</li>
+                    <li>Join the community</li>
+                </ul>
+            </div>
+            
+            <div class=""button-wrapper"">
+                <a href=""https://bloodwave.game/login"" class=""button"">Start Your Journey</a>
+            </div>
+            
+            <div class=""feature"">
+                💡 <strong>Pro Tip:</strong> Check out our <a href=""https://bloodwave.game/guide"" style=""color: #d4af37; text-decoration: none;"">beginner's guide</a> to master the basics quickly.
+            </div>
+            
+            <div class=""divider""></div>
+            
+            <div class=""section"">
+                <div class=""section-title"">❓ Need Help?</div>
+                <p class=""message"">Our support team is here for you. If you have any questions or need assistance, visit our <a href=""https://bloodwave.game/support"" style=""color: #d4af37; text-decoration: none;"">support center</a>.</p>
+            </div>
+            
+            <p class=""message"" style=""font-size: 12px; color: #888888; margin-bottom: 0;"">
+                Thank you for joining Bloodwave. We're honored to have you as part of our community!
+            </p>
+        </td></tr>
+        
+        <tr><td class=""footer"">
+            <p style=""margin: 0 0 8px 0;"">&copy; 2026 Bloodwave. All rights reserved.</p>
+            <p style=""margin: 0 0 8px 0;"">
+                <a href=""https://bloodwave.game"">Visit Website</a> | 
+                <a href=""https://bloodwave.game/support"">Support</a> | 
+                <a href=""https://bloodwave.game/terms"">Terms</a>
+            </p>
+            <div class=""social"">
+                <a href=""https://discord.gg/bloodwave"">Discord</a> | 
+                <a href=""https://twitter.com/playbw"">Twitter</a>
+            </div>
+        </td></tr>
+    </table>
+</body>
+</html>";
     }
 
     private async Task TrySendEmailAsync(string to, string subject, string text = "", string? html = null)
@@ -666,6 +734,78 @@ public class AuthService : IAuthService
 
         var separator = baseUrl.Contains('?', StringComparison.Ordinal) ? '&' : '?';
         return $"{baseUrl}{separator}token={Uri.EscapeDataString(token)}";
+    }
+
+    public static string BuildEmailChangedEmailHtml(string username, string oldEmail, string newEmail)
+    {
+        var safeUsername = WebUtility.HtmlEncode(username);
+        var safeOldEmail = WebUtility.HtmlEncode(oldEmail);
+        var safeNewEmail = WebUtility.HtmlEncode(newEmail);
+
+        return $@"<!DOCTYPE html>
+<html lang=""en"" xmlns=""http://www.w3.org/1999/xhtml"">
+<head>
+    <meta charset=""UTF-8"" />
+    <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"" />
+    <title>Email Address Updated - Bloodwave</title>
+    <style type=""text/css"">
+        body {{margin: 0; padding: 0; min-width: 100%!important; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif; font-size: 16px; line-height: 1.5;}}
+        table {{border-collapse: collapse; border-spacing: 0;}}
+        img {{max-width: 100%; height: auto; display: block;}}
+        .container {{width: 100%; max-width: 600px; margin: 0 auto;}}
+        .header {{text-align: center; padding: 30px 20px; background: linear-gradient(135deg, #1a1a1a 0%, #2a1a1a 100%); border-bottom: 3px solid #4da6ff;}}
+        .header h1 {{margin: 0; color: #ffffff; font-size: 32px; font-weight: 600; letter-spacing: 2px;}}
+        .header p {{margin: 8px 0 0 0; color: #4da6ff; font-size: 12px; letter-spacing: 1px; text-transform: uppercase;}}
+        .body-content {{background: #0f0f0f; color: #e0e0e0; padding: 30px;}}
+        .greeting {{font-size: 18px; color: #ffffff; margin: 0 0 20px 0; font-weight: 500;}}
+        .message {{color: #cccccc; margin: 15px 0; line-height: 1.6;}}
+        .info-box {{background: rgba(77, 166, 255, 0.08); border: 1px solid rgba(77, 166, 255, 0.2); border-left: 3px solid #4da6ff; padding: 15px; margin: 20px 0; color: #e0e0e0; font-size: 13px;}}
+        .email-label {{color: #999999; font-size: 12px; margin-bottom: 3px;}}
+        .email-value {{color: #4da6ff; font-weight: 600; font-size: 13px; font-family: 'Courier New', monospace;}}
+        .alert {{background: #2a1a1a; border-left: 3px solid #ff6b6b; padding: 15px; margin: 20px 0; color: #e0e0e0; font-size: 13px;}}
+        .alert strong {{color: #ff6b6b;}}
+        .footer {{background: #1a1a1a; color: #888888; font-size: 12px; padding: 20px; text-align: center; border-top: 1px solid #333333;}}
+        .footer a {{color: #4da6ff; text-decoration: none;}}
+        hr {{border: none; border-top: 1px solid #333333; margin: 20px 0;}}
+    </style>
+</head>
+<body>
+    <table class=""container"" role=""presentation"" cellpadding=""0"" cellspacing=""0"" border=""0"">
+        <tr><td class=""header"">
+            <h1>✉ BLOODWAVE</h1>
+            <p>Email Updated</p>
+        </td></tr>
+        <tr><td class=""body-content"">
+            <p class=""greeting"">Hello {safeUsername},</p>
+            <p class=""message"">Your Bloodwave account email address has been successfully updated.</p>
+            
+            <div class=""info-box"">
+                <div class=""email-label"">Previous email:</div>
+                <div class=""email-value"">{safeOldEmail}</div>
+                <div style=""margin: 12px 0 0 0; text-align: center; color: #666666;"">↓</div>
+                <div class=""email-label"" style=""margin-top: 12px;"">New email:</div>
+                <div class=""email-value"">{safeNewEmail}</div>
+            </div>
+            
+            <p class=""message"">From now on, use your new email address for logging in.</p>
+            
+            <hr />
+            
+            <div class=""alert"">
+                🔔 <strong>Important:</strong> If you did not make this change, someone else may have access to your account. <a href=""https://bloodwave.game/support"" style=""color: #ff9999; text-decoration: none;"">Contact support immediately</a>.
+            </div>
+            
+            <p class=""message"" style=""font-size: 12px; color: #888888;"">
+                You've received this notification at both your old and new email addresses to confirm this change.
+            </p>
+        </td></tr>
+        <tr><td class=""footer"">
+            <p style=""margin: 0 0 8px 0;"">&copy; 2026 Bloodwave. All rights reserved.</p>
+            <p style=""margin: 0;""><a href=""https://bloodwave.game"">Visit our website</a> | <a href=""https://bloodwave.game/support"">Support</a></p>
+        </td></tr>
+    </table>
+</body>
+</html>";
     }
 }
 

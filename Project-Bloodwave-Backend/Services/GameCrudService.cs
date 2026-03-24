@@ -526,42 +526,67 @@ public class GameCrudService : IGameCrudService
         if (!usernameChanged && !emailChanged && !passwordChanged)
             return;
 
-        var changes = new List<string>();
-
-        if (usernameChanged)
-            changes.Add($"- Username changed from '{oldUsername}' to '{user.Username}'");
-
-        if (emailChanged)
-            changes.Add($"- Email changed from '{oldEmail}' to '{user.Email}'");
-
-        if (passwordChanged)
-            changes.Add("- Password was changed");
-
-        var body = "A security-related update was made to your Bloodwave account.\n\n" +
-                   string.Join("\n", changes) +
-                   "\n\nIf this was not you, secure your account immediately.";
-
-        var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
-        if (!string.IsNullOrWhiteSpace(oldEmail))
-            recipients.Add(oldEmail);
-        if (!string.IsNullOrWhiteSpace(user.Email))
-            recipients.Add(user.Email);
-
-        foreach (var recipient in recipients)
+        // Special handling for email changes - send beautiful HTML email
+        if (emailChanged && !string.IsNullOrWhiteSpace(oldEmail))
         {
             try
             {
+                var htmlBody = AuthService.BuildEmailChangedEmailHtml(user.Username, oldEmail, user.Email);
+                
+                // Send to old email
+                var resultOld = await _mailService.SendEmailAsync(
+                    oldEmail,
+                    "Bloodwave - Email Address Updated",
+                    text: "",
+                    html: htmlBody);
+                
+                if (!resultOld.IsSuccess)
+                    _logger.LogWarning("Failed to send email-change notification to old email. To={OldEmail}, Error={Error}", oldEmail, resultOld.Message);
+
+                // Send to new email
+                var resultNew = await _mailService.SendEmailAsync(
+                    user.Email,
+                    "Bloodwave - Email Address Updated",
+                    text: "",
+                    html: htmlBody);
+
+                if (!resultNew.IsSuccess)
+                    _logger.LogWarning("Failed to send email-change notification to new email. To={NewEmail}, Error={Error}", user.Email, resultNew.Message);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Unexpected email-change notification error");
+            }
+        }
+        
+        // Handle other changes (username, password changes when email didn't change)
+        if ((usernameChanged || passwordChanged) && !emailChanged)
+        {
+            var changes = new List<string>();
+
+            if (usernameChanged)
+                changes.Add($"- Username changed from '{oldUsername}' to '{user.Username}'");
+
+            if (passwordChanged)
+                changes.Add("- Password was changed");
+
+            var body = "A security-related update was made to your Bloodwave account.\n\n" +
+                       string.Join("\n", changes) +
+                       "\n\nIf this was not you, secure your account immediately.";
+
+            try
+            {
                 var result = await _mailService.SendEmailAsync(
-                    recipient,
+                    user.Email,
                     "Bloodwave account update notification",
                     body);
 
                 if (!result.IsSuccess)
-                    _logger.LogWarning("Failed to send profile-update email. To={Recipient}, Error={Error}", recipient, result.Message);
+                    _logger.LogWarning("Failed to send profile-update email. To={Email}, Error={Error}", user.Email, result.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected profile-update email error. To={Recipient}", recipient);
+                _logger.LogError(ex, "Unexpected profile-update email error. To={Email}", user.Email);
             }
         }
     }
