@@ -36,6 +36,7 @@ public interface IGameCrudService
 
     Task<UserDto?> GetUserByIdAsync(int userId);
     Task<UserDto?> UpdateUserAsync(int userId, UpdateUserDto dto);
+    Task<bool> VerifyUserPasswordAsync(int userId, string password);
     Task<bool> DeleteUserAsync(int userId);
 }
 
@@ -575,6 +576,19 @@ public class GameCrudService : IGameCrudService
                 _logger.LogError(ex, "Unexpected account-update email error. To={Email}", user.Email);
             }
         }
+    }
+
+    public async Task<bool> VerifyUserPasswordAsync(int userId, string password)
+    {
+        var user = await _context.Users
+            .Where(u => u.Id == userId)
+            .Select(u => new { u.PasswordHash })
+            .FirstOrDefaultAsync();
+
+        if (user == null)
+            return false;
+
+        return BCrypt.Net.BCrypt.Verify(password, user.PasswordHash);
     }
 
     public async Task<bool> DeleteUserAsync(int userId)

@@ -132,11 +132,18 @@ public class UserController : ControllerBase
     }
 
     [HttpDelete("me")]
-    public async Task<ActionResult> DeleteMe()
+    public async Task<ActionResult> DeleteMe([FromBody] DeleteMeRequestDto dto)
     {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
         var validationError = this.ValidateAndGetUserId(out int userId);
         if (validationError != null)
             return validationError;
+
+        var passwordIsValid = await _crudService.VerifyUserPasswordAsync(userId, dto.Password);
+        if (!passwordIsValid)
+            return Unauthorized(new { message = "Invalid password" });
 
         var deleted = await _crudService.DeleteUserAsync(userId);
         return deleted ? Ok(new { success = true }) : NotFound(new { message = "User not found" });
