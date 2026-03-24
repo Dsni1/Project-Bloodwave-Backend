@@ -526,67 +526,53 @@ public class GameCrudService : IGameCrudService
         if (!usernameChanged && !emailChanged && !passwordChanged)
             return;
 
-        // Special handling for email changes - send beautiful HTML email
-        if (emailChanged && !string.IsNullOrWhiteSpace(oldEmail))
+        if (emailChanged)
         {
             try
             {
                 var htmlBody = AuthService.BuildEmailChangedEmailHtml(user.Username, oldEmail, user.Email);
-                
-                // Send to old email
-                var resultOld = await _mailService.SendEmailAsync(
-                    oldEmail,
-                    "Bloodwave - Email Address Updated",
-                    text: "",
-                    html: htmlBody);
-                
-                if (!resultOld.IsSuccess)
-                    _logger.LogWarning("Failed to send email-change notification to old email. To={OldEmail}, Error={Error}", oldEmail, resultOld.Message);
+                var recipients = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
 
-                // Send to new email
-                var resultNew = await _mailService.SendEmailAsync(
-                    user.Email,
-                    "Bloodwave - Email Address Updated",
-                    text: "",
-                    html: htmlBody);
+                if (!string.IsNullOrWhiteSpace(oldEmail))
+                    recipients.Add(oldEmail);
+                if (!string.IsNullOrWhiteSpace(user.Email))
+                    recipients.Add(user.Email);
 
-                if (!resultNew.IsSuccess)
-                    _logger.LogWarning("Failed to send email-change notification to new email. To={NewEmail}, Error={Error}", user.Email, resultNew.Message);
+                foreach (var recipient in recipients)
+                {
+                    var result = await _mailService.SendEmailAsync(
+                        recipient,
+                        "Bloodwave - Email Address Updated",
+                        text: "",
+                        html: htmlBody);
+
+                    if (!result.IsSuccess)
+                        _logger.LogWarning("Failed to send email-change notification. To={Recipient}, Error={Error}", recipient, result.Message);
+                }
             }
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Unexpected email-change notification error");
             }
         }
-        
-        // Handle other changes (username, password changes when email didn't change)
-        if ((usernameChanged || passwordChanged) && !emailChanged)
+
+        if (usernameChanged || passwordChanged)
         {
-            var changes = new List<string>();
-
-            if (usernameChanged)
-                changes.Add($"- Username changed from '{oldUsername}' to '{user.Username}'");
-
-            if (passwordChanged)
-                changes.Add("- Password was changed");
-
-            var body = "A security-related update was made to your Bloodwave account.\n\n" +
-                       string.Join("\n", changes) +
-                       "\n\nIf this was not you, secure your account immediately.";
-
             try
             {
+                var htmlBody = AuthService.BuildAccountUpdatedEmailHtml(user.Username, oldUsername, usernameChanged, passwordChanged);
                 var result = await _mailService.SendEmailAsync(
                     user.Email,
-                    "Bloodwave account update notification",
-                    body);
+                    "Bloodwave - Account Updated",
+                    text: "",
+                    html: htmlBody);
 
                 if (!result.IsSuccess)
-                    _logger.LogWarning("Failed to send profile-update email. To={Email}, Error={Error}", user.Email, result.Message);
+                    _logger.LogWarning("Failed to send account-update email. To={Email}, Error={Error}", user.Email, result.Message);
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "Unexpected profile-update email error. To={Email}", user.Email);
+                _logger.LogError(ex, "Unexpected account-update email error. To={Email}", user.Email);
             }
         }
     }
