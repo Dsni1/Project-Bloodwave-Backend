@@ -612,7 +612,7 @@ public class AuthService : IAuthService
             : $@"<div style=""margin-top:28px;text-align:center;""><a href=""{safeActionUrl}"" style=""display:inline-block;background:linear-gradient(135deg, #9B2C2C 0%, #B22C2C 100%);color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(155,44,44,0.3);transition:all 0.3s ease;"">{safeActionText}</a></div>";
         
         var contactUsBlock = addContactUs
-            ? @"<div style=""margin-top:16px;text-align:center;""><a href=""mailto:busai.dani@gmail.com,gergoagajdos@gmail.com,padarzsolti@gmail.com?subject=Support%20Request"" style=""display:inline-block;background:linear-gradient(135deg, #9B2C2C 0%, #B22C2C 100%);color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(155,44,44,0.3);transition:all 0.3s ease;"" >Contact Us</a></div>"
+            ? @"<div style=""margin-top:16px;text-align:center;""><a href=""mailto:project.bloodwave.web@gmail.com?subject=Support%20Request"" style=""display:inline-block;background:linear-gradient(135deg, #9B2C2C 0%, #B22C2C 100%);color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-weight:600;font-size:14px;letter-spacing:0.3px;box-shadow:0 4px 12px rgba(155,44,44,0.3);transition:all 0.3s ease;"" >Contact Us</a></div>"
             : string.Empty;
 
         return $@"<!DOCTYPE html>
