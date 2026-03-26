@@ -10,7 +10,11 @@ builder.Services
     .AddSwaggerWithJwt()
     .AddApplicationServices();
 
-builder.WebHost.UseUrls("http://0.0.0.0:5000");
+var aspNetCoreUrls = builder.Configuration["ASPNETCORE_URLS"];
+if (string.IsNullOrWhiteSpace(aspNetCoreUrls))
+{
+    builder.WebHost.UseUrls("http://0.0.0.0:5000");
+}
 
 var app = builder.Build();
 
