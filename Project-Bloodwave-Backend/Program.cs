@@ -1,4 +1,5 @@
 using Project_Bloodwave_Backend.Extensions;
+using Microsoft.AspNetCore.HttpOverrides;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -10,6 +11,13 @@ builder.Services
     .AddSwaggerWithJwt()
     .AddApplicationServices();
 
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+
 var aspNetCoreUrls = builder.Configuration["ASPNETCORE_URLS"];
 if (string.IsNullOrWhiteSpace(aspNetCoreUrls))
 {
@@ -17,6 +25,8 @@ if (string.IsNullOrWhiteSpace(aspNetCoreUrls))
 }
 
 var app = builder.Build();
+
+app.UseForwardedHeaders();
 
 // Middleware
 app.UseSwagger(options =>
