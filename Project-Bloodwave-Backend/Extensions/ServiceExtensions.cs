@@ -3,6 +3,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using System.Text;
+using System.Security.Claims;
 using Project_Bloodwave_Backend.Data;
 using Project_Bloodwave_Backend.Services;
 
@@ -65,6 +66,27 @@ public static class ServiceExtensions
                     ValidAudience = jwtSettings["Audience"],
                     ValidateLifetime = true,
                     ClockSkew = TimeSpan.Zero
+                };
+
+                options.Events = new JwtBearerEvents
+                {
+                    OnTokenValidated = async context =>
+                    {
+                        var userIdClaim = context.Principal?.FindFirstValue(ClaimTypes.NameIdentifier);
+                        if (!int.TryParse(userIdClaim, out var userId))
+                        {
+                            context.Fail("Invalid token user identifier.");
+                            return;
+                        }
+
+                        var db = context.HttpContext.RequestServices.GetRequiredService<BloodwaveDbContext>();
+                        var userExistsAndActive = await db.Users
+                            .AsNoTracking()
+                            .AnyAsync(u => u.Id == userId && u.IsActive);
+
+                        if (!userExistsAndActive)
+                            context.Fail("Token is no longer valid.");
+                    }
                 };
             });
 

@@ -597,6 +597,15 @@ public class GameCrudService : IGameCrudService
         if (user == null)
             return false;
 
+        var activeRefreshTokens = await _context.RefreshTokens
+            .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+            .ToListAsync();
+
+        foreach (var refreshToken in activeRefreshTokens)
+        {
+            refreshToken.RevokedAt = DateTime.UtcNow;
+        }
+
         _context.Users.Remove(user);
 
         await _context.SaveChangesAsync();
