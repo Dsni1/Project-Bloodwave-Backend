@@ -5,6 +5,7 @@ using Project_Bloodwave_Backend.Data;
 using Project_Bloodwave_Backend.DTOs;
 using Project_Bloodwave_Backend.Extensions;
 using Project_Bloodwave_Backend.Models;
+using Project_Bloodwave_Backend.Services;
 using System.Security.Cryptography;
 
 namespace Project_Bloodwave_Backend.Controllers;
@@ -15,10 +16,23 @@ namespace Project_Bloodwave_Backend.Controllers;
 public class RefreshTokenController : ControllerBase
 {
     private readonly BloodwaveDbContext _context;
+    private readonly IAuthService _authService;
 
-    public RefreshTokenController(BloodwaveDbContext context)
+    public RefreshTokenController(BloodwaveDbContext context, IAuthService authService)
     {
         _context = context;
+        _authService = authService;
+    }
+
+    [AllowAnonymous]
+    [HttpPost("refresh")]
+    public async Task<ActionResult<AuthResponseDto>> Refresh([FromBody] RefreshRequestDto dto)
+    {
+        if (!ModelState.IsValid)
+            return BadRequest(ModelState);
+
+        var result = await _authService.RefreshTokenAsync(dto);
+        return result.Success ? Ok(result) : Unauthorized(result);
     }
 
     [HttpGet]

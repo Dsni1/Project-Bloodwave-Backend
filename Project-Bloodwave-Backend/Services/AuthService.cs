@@ -16,7 +16,7 @@ public interface IAuthService
     Task<AuthResponseDto> RegisterAsync(RegisterDto registerDto);
     Task<AuthResponseDto> LoginAsync(LoginDto loginDto);
     Task<AuthResponseDto> LogoutAsync(int userId);
-    Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto);
+    Task<AuthResponseDto> RefreshTokenAsync(RefreshRequestDto refreshRequestDto);
     Task<AuthResponseDto> ForgotPasswordAsync(ForgotPasswordRequestDto dto);
     Task<AuthResponseDto> ResetPasswordAsync(ResetPasswordRequestDto dto);
 }
@@ -317,9 +317,9 @@ public class AuthService : IAuthService
         return new RegistrationValidation(true, null);
     }
 
-    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshTokenDto refreshTokenDto)
+    public async Task<AuthResponseDto> RefreshTokenAsync(RefreshRequestDto refreshRequestDto)
     {
-        if (string.IsNullOrWhiteSpace(refreshTokenDto.RefreshToken))
+        if (string.IsNullOrWhiteSpace(refreshRequestDto.RefreshToken))
         {
             return new AuthResponseDto
             {
@@ -330,7 +330,7 @@ public class AuthService : IAuthService
 
         var refreshToken = await _context.RefreshTokens
             .FirstOrDefaultAsync(rt =>
-                rt.Token == refreshTokenDto.RefreshToken &&
+                rt.Token == refreshRequestDto.RefreshToken &&
                 rt.UserAgent != PasswordResetTokenUserAgent);
 
         if (refreshToken == null || !refreshToken.IsActive)
@@ -349,7 +349,7 @@ public class AuthService : IAuthService
             };
         
         // Create new refresh token
-        var newRefreshToken = await CreateRefreshTokenAsync(user.Id, refreshTokenDto.RefreshToken);
+        var newRefreshToken = await CreateRefreshTokenAsync(user.Id, refreshRequestDto.RefreshToken);
 
         return new AuthResponseDto
         {
