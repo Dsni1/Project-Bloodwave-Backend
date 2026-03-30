@@ -1,325 +1,287 @@
-# Bloodwave Game Backend API
+<div align="center">
 
-## 📋 Projekt Áttekintés
+# 💥 Project: Bloodwave Backend
 
-A **Bloodwave Game Backend** egy ASP.NET Core 8.0 Web API, amely biztosítja:
-- **User Authentication**: JWT token-alapú autentikáció
-- **Jelszóbiztonság**: BCrypt hash algoritmus
-- **Adatbázis**: MySQL 8.0+
-- **CORS**: Cross-Origin Request Support
+[![Tech Stack](https://skillicons.dev/icons?i=cs,dotnet,mysql,vscode,github)](https://skillicons.dev)
 
----
+[![.NET 8](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)](#)
+[![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-Web%20API-5C2D91?logo=dotnet&logoColor=white)](#)
+[![MySQL](https://img.shields.io/badge/MySQL-8+-4479A1?logo=mysql&logoColor=white)](#)
+[![EF Core](https://img.shields.io/badge/Entity%20Framework-Core-68217A?logo=.net&logoColor=white)](#)
+[![JWT](https://img.shields.io/badge/Auth-JWT-000000?logo=jsonwebtokens&logoColor=white)](#)
 
-## 🏗️ Architektúra
+This repository contains the ASP.NET Core backend for Project Bloodwave. It provides authentication, user management, match tracking, item and weapon catalogs, achievement handling, refresh token workflows, and a Swagger-documented REST API for web and game clients.
 
-### Mappastruktúra
-```
-Controllers/
-  └── AuthController.cs          # Login/Register endpointok
-Services/
-  ├── AuthService.cs             # Üzleti logika (register, login, JWT)
-  └── JwtService.cs              # JWT token generálás (lehetséges refresh tokenekhez)
-Models/
-  ├── User.cs                    # User entitás
-  └── RefreshToken.cs            # Refresh token tárolás
-Data/
-  └── BloodwaveDbContext.cs       # Entity Framework DbContext
-DTOs/
-  ├── AuthResponseDto.cs         # Válasz objektum (Success, Message, Token, User)
-  ├── LoginDto.cs                # Login request (Username, Password)
-  ├── RegisterDto.cs             # Register request (Username, Email, Password)
-  ├── RefreshRequestDto.cs        # Refresh token request
-  └── UserDto.cs                 # User adat transfer object
-```
+</div>
 
 ---
 
-## 🚀 API Endpointok
+## Overview
 
-### Authentication
+Project Bloodwave Backend is a .NET 8 Web API built around a MySQL database using Entity Framework Core. Its main goals are:
 
-#### 1. **Register** - Új felhasználó regisztrálása
-```
-POST /api/auth/register
-Content-Type: application/json
-
-{
-  "username": "jani",
-  "email": "jani@example.com",
-  "password": "SecurePass123!"
-}
-
-Response:
-{
-  "success": true,
-  "message": "User registered successfully",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "username": "jani",
-    "email": "jani@example.com"
-  }
-}
-```
-
-#### 2. **Login** - Felhasználó bejelentkezése
-```
-POST /api/auth/login
-Content-Type: application/json
-
-{
-  "username": "jani",
-  "password": "SecurePass123!"
-}
-
-Response:
-{
-  "success": true,
-  "message": "Login successful",
-  "token": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...",
-  "user": {
-    "id": 1,
-    "username": "jani",
-    "email": "jani@example.com"
-  }
-}
-```
+- Provide secure JWT based authentication for clients
+- Store and expose gameplay data (matches, items, weapons, achievements)
+- Support account security workflows (refresh token rotation, forgot/reset password)
+- Expose a clear, testable REST API with Swagger UI
+- Act as the data backbone for the Bloodwave frontend portal and game integrations
 
 ---
 
-## 🔐 JWT Token
+## Highlights
 
-### Token Tartalom
-```
-Header:
-{
-  "alg": "HS256",
-  "typ": "JWT"
-}
-
-Payload:
-{
-  "sub": "1",
-  "name": "jani",
-  "email": "jani@example.com",
-  "exp": 1676892345,
-  "iss": "BloodwaveApi",
-  "aud": "BloodwaveClient"
-}
-
-Signature: HMACSHA256(header.payload, secret)
-```
-
-### Token Érvényessége
-- **Kiállítás után**: 24 óra
-- **Secret Key**: `appsettings.json` → `Jwt:Key`
-
-### Autentikáció Használata
-```
-GET /api/player/stats
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
-```
+- ASP.NET Core Web API on .NET 8
+- Entity Framework Core + Pomelo MySQL provider
+- JWT access tokens with role-based authorization
+- Refresh token storage and rotation logic
+- Password reset flow with SMTP email support
+- Swagger/OpenAPI available under `/api/docs`
+- Modular service/controller structure for easier maintenance
 
 ---
 
-## 🗄️ Adatbázis Schema
+## Features
 
-### Users Tábla
-```sql
-CREATE TABLE Users (
-  Id INT PRIMARY KEY AUTO_INCREMENT,
-  Username NVARCHAR(255) UNIQUE NOT NULL,
-  Email NVARCHAR(255) UNIQUE NOT NULL,
-  PasswordHash NVARCHAR(MAX) NOT NULL,
-  IsActive BIT DEFAULT 1,
-  CreatedAt DATETIME DEFAULT CURRENT_TIMESTAMP,
-  UpdatedAt DATETIME NULL
-);
-```
+- Authentication and account lifecycle
+- Register, login, logout
+- Forgot password and reset password via tokenized flow
+- Refresh token issue/refresh/revoke patterns
 
-### RefreshTokens Tábla
-```sql
-CREATE TABLE RefreshTokens (
-  Id INT PRIMARY KEY AUTO_INCREMENT,
-  UserId INT NOT NULL,
-  Token NVARCHAR(255) NOT NULL,
-  CreatedAt DATETIME NOT NULL,
-  ExpiresAt DATETIME NOT NULL,
-  RevokedAt DATETIME NULL,
-  ReplacesToken NVARCHAR(255) NULL,
-  CreatedByIp NVARCHAR(45) NULL,
-  UserAgent NVARCHAR(255) NULL,
-  FOREIGN KEY (UserId) REFERENCES Users(Id) ON DELETE CASCADE
-);
-```
+- User management
+- Current user profile (`me`) endpoints
+- Admin-only user read/update/delete endpoints
+- Password verification before self-delete
+
+- Game data management
+- Matches with stats (time, level, damage dealt/taken, enemies killed, coins, max health)
+- Item and weapon CRUD endpoints
+- Achievement CRUD and user unlock tracking
+
+- Operational endpoints
+- Health-like ping endpoint (`/api/test/ping`)
+- SMTP email test endpoint (`/api/test/send-mail`)
 
 ---
 
-## 🔧 Telepítés és Beállítás
+## Architecture and Project Layout
 
-### 1. Előfeltételek
-- .NET 8.0 SDK
-- MySQL 8.0+
-- Visual Studio 2022 / VS Code
+This backend follows a classic ASP.NET Core layered structure:
 
-### 2. Projekt klónozása
+- `Controllers/` - HTTP endpoints and authorization boundaries
+- `Services/` - business logic (auth, game CRUD, mail)
+- `Data/` - EF Core DbContext and model relationships
+- `Models/` - persistence entities
+- `DTOs/` - API contracts for requests/responses
+- `Extensions/` - service registration and controller helper extensions
+- `Migrations/` - EF Core migration history
+
+Core entrypoint:
+
+- `Program.cs` configures CORS, DB context, JWT auth, Swagger, middleware, and routing
+
+---
+
+## API Surface (Summary)
+
+Base route prefix: `/api`
+
+### User (`/api/user`)
+
+- `POST /api/user` - register
+- `POST /api/user/login` - login
+- `POST /api/user/forgot-password` - start password reset
+- `POST /api/user/reset-password` - complete password reset
+- `POST /api/user/logout` - logout current user
+- `GET /api/user/me` - get current user
+- `PUT /api/user/me` - update current user
+- `DELETE /api/user/me` - delete current user (password required)
+- `GET /api/user/name?id=...` - public username lookup
+- `GET /api/user/{userId}` - admin only
+- `PUT /api/user/{userId}` - admin only
+- `DELETE /api/user/{userId}` - admin only
+
+### Refresh Tokens (`/api/refreshtoken`)
+
+- `POST /api/refreshtoken/refresh` - exchange refresh token for new tokens
+- `GET /api/refreshtoken` - list own refresh tokens
+- `GET /api/refreshtoken/{id}` - get own refresh token by id
+- `POST /api/refreshtoken` - create refresh token
+- `PUT /api/refreshtoken/{id}` - rotate refresh token
+- `DELETE /api/refreshtoken/{id}` - admin only (for own user scope)
+
+### Matches (`/api/match`)
+
+- `GET /api/match` - list all matches (public)
+- `GET /api/match/player?playerId=...` - list matches for user (public)
+- `GET /api/match/{matchId}` - get own match by id
+- `POST /api/match` - create match for authenticated user
+- `PUT /api/match/{matchId}` - admin only
+- `DELETE /api/match/{matchId}` - owner or admin
+
+### Items (`/api/item`)
+
+- `GET /api/item` - list items
+- `GET /api/item/{itemId}` - get item
+- `POST /api/item` - admin only
+- `PUT /api/item/{itemId}` - admin only
+- `DELETE /api/item/{itemId}` - admin only
+
+### Weapons (`/api/weapon`)
+
+- `GET /api/weapon` - list weapons
+- `GET /api/weapon/{weaponId}` - get weapon
+- `POST /api/weapon` - admin only
+- `PUT /api/weapon/{weaponId}` - admin only
+- `DELETE /api/weapon/{weaponId}` - admin only
+
+### Achievements (`/api/achievment`)
+
+Note: route/entity naming currently uses `Achievment` in code.
+
+- `GET /api/achievment` - list achievements (public)
+- `GET /api/achievment/{achievmentId}` - get achievement (public)
+- `GET /api/achievment/me` - list own unlocked achievements
+- `GET /api/achievment/user/{userId}` - admin only
+- `POST /api/achievment` - admin only
+- `PUT /api/achievment/{achievmentId}` - admin only
+- `DELETE /api/achievment/{achievmentId}` - admin only
+- `POST /api/achievment/{achievmentId}/unlock` - unlock for current user
+
+### Test (`/api/test`)
+
+- `GET /api/test/ping` - service alive check
+- `POST /api/test/send-mail` - SMTP mail test
+
+---
+
+## Development - Getting Started
+
+Requirements:
+
+- .NET 8 SDK
+- MySQL Server
+- Optional SMTP server for mail features
+
+Clone and restore:
+
 ```bash
-cd /home/dani/Projects/Project-Bloodwave-Backend
-```
-
-### 3. NuGet Csomagok Telepítése
-```bash
+git clone <your-backend-repo-url>
+cd Project-Bloodwave-Backend
 dotnet restore
 ```
 
-### 4. Adatbázis Beállítása
-```bash
-# appsettings.json módosítása
-# ConnectionStrings:DefaultConnection = "Server=localhost;Port=3306;Database=bloodwave_game;User=root;Password=root;"
-```
+Configure application settings:
 
-### 5. Migrations (Entity Framework)
+- `ConnectionStrings:DefaultConnection`
+- `Jwt:Key`, `Jwt:Issuer`, `Jwt:Audience`
+- `Authorization:AdminUsernames` / `Authorization:AdminEmails`
+- `App:PasswordResetUrl`
+- `Smtp:*` settings
+
+Apply migrations:
+
 ```bash
-dotnet ef migrations add InitialCreate
 dotnet ef database update
 ```
 
-### 6. Szerver Indítása
+Run the API:
+
 ```bash
 dotnet run
 ```
 
-API elérhető: `https://localhost:5001` vagy `http://localhost:5000`
+Swagger docs:
+
+- UI: `/api/docs`
+- OpenAPI JSON: `/api/docs/v1/openapi.json`
+- Convenience redirect: `/api`
 
 ---
 
-## 📦 Függőségek (NuGet Csomagok)
+## Configuration Example
 
-| Csomag | Verzió | Célja |
-|--------|--------|-------|
-| Microsoft.EntityFrameworkCore | 8.0.0 | ORM (Adatbázis) |
-| Pomelo.EntityFrameworkCore.MySql | 8.0.0 | MySQL támogatás |
-| System.IdentityModel.Tokens.Jwt | 7.1.0 | JWT token generálás |
-| Microsoft.IdentityModel.Tokens | 7.1.0 | Token validáció |
-| BCrypt.Net-Next | 4.0.3 | Jelszóhashálás |
-| Swashbuckle.AspNetCore | 6.6.2 | Swagger/OpenAPI dokumentáció |
-
----
-
-## 🔍 Kód Működésének Leírása
-
-### 1. **Regisztráció (Registration)**
-```
-RegisterDto → AuthController → AuthService.RegisterAsync()
-    ↓
-- Username/Email duplikáció ellenőrzése
-- Jelszó BCrypt hash-elésa
-- User rekord mentése az adatbázisba
-- JWT token generálása
-- AuthResponseDto visszaadása (Success, Token, User)
-```
-
-### 2. **Bejelentkezés (Login)**
-```
-LoginDto → AuthController → AuthService.LoginAsync()
-    ↓
-- User megkeresése username alapján
-- Jelszó verifikálása BCrypt-tel
-- IsActive státusz ellenőrzése
-- JWT token generálása
-- AuthResponseDto visszaadása
-```
-
-### 3. **JWT Token Generálás**
-```
-User → AuthService.GenerateJwtToken()
-    ↓
-- Claims készítése (UserId, Username, Email)
-- HS256 szignálás
-- Token expiration: +24 óra
-- Base64 encoded string visszaadása
-```
-
-### 4. **Autentikáció (Authorization)**
-```
-HTTP Request + Bearer Token → Program.cs JWT Middleware
-    ↓
-- Token szintaxis ellenőrzése
-- Szignátúra validáció
-- Expiration ellenőrzése
-- Claims kinyerése
-- Principal objektum létrehozása
-- Request továbbítása az autentikált endpoint-hoz
-```
-
----
-
-## 🛡️ Biztonsági Jellemzők
-
-| Feature | Implementáció |
-|---------|-----------------|
-| **Jelszóbiztonság** | BCrypt hash (10 rounds) |
-| **Token Aláírás** | HMACSHA256 |
-| **CORS** | `AllowAnyOrigin()` (dev), később restricting |
-| **HTTPS** | Redirects HTTP → HTTPS |
-| **JWT Expiration** | 24 óra |
-| **Database Validation** | Unique constraints (Username, Email) |
-
----
-
-## 📝 Swagger/OpenAPI Dokumentáció
-
-Indítás után nyissa meg:
-```
-https://localhost:5001/swagger
-```
-
-Interaktívan tesztelhetők az összes endpoint.
-
----
-
-## ❌ Hibahibaadatok
-
-### Regisztrációs hibák
 ```json
 {
-  "success": false,
-  "message": "Username already exists",
-  "token": null,
-  "user": null
-}
-```
-
-### Bejelentkezési hibák
-```json
-{
-  "success": false,
-  "message": "Invalid username or password",
-  "token": null,
-  "user": null
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=localhost;Port=3306;Database=bloodwave_game;User=bloodwave;Password=your_password;"
+  },
+  "Jwt": {
+    "Key": "replace-with-a-long-random-secret",
+    "Issuer": "BloodwaveApi",
+    "Audience": "BloodwaveClient"
+  },
+  "Authorization": {
+    "AdminUsernames": ["admin"],
+    "AdminEmails": []
+  },
+  "App": {
+    "PasswordResetUrl": "https://your-frontend/reset-password"
+  },
+  "Smtp": {
+    "Host": "127.0.0.1",
+    "Port": 25,
+    "UseSsl": false,
+    "UseAuthentication": false,
+    "Username": "",
+    "Password": "",
+    "FromEmail": "project.bloodwave.web@gmail.com",
+    "FromName": "Bloodwave"
+  }
 }
 ```
 
 ---
 
-## 📚 Lehetséges Bővítések
+## Security Notes
 
-- [ ] Refresh Token implementáció (Token frissítés)
-- [ ] Email verifikáció (Confirmation link)
-- [ ] 2FA (Two-Factor Authentication)
-- [ ] Rate Limiting
-- [ ] Audit Logging
-- [ ] Role-Based Access Control (RBAC)
-- [ ] Social Login (Google, GitHub)
+- Never commit production secrets to `appsettings.json`
+- Use environment variables or secret stores for JWT keys and SMTP credentials
+- Use a strong random JWT key in non-dev environments
+- Restrict CORS policy in production instead of `AllowAnyOrigin`
+- Enable HTTPS and reverse-proxy hardening in deployment
 
 ---
 
-## 📄 Licenc
+## Verification Checklist
 
-Egyedi projekt - Bloodwave Game Backend
+```bash
+dotnet build
+dotnet run
+```
+
+Then verify:
+
+- Open `/api/docs` and confirm endpoint discovery
+- Call `/api/test/ping` for basic liveliness
+- Test register -> login -> refresh flow
+- Create and query a match with related item/weapon data
 
 ---
 
-## 👨‍💻 Szerző
+## Troubleshooting
 
-Dani - 2026. február 17.
+- `dotnet ef` command missing:
+
+```bash
+dotnet tool install --global dotnet-ef
+```
+
+- Database connection failures:
+  - Check MySQL host/port/user/password and DB existence
+  - Verify the connection string in active environment config
+
+- `401 Unauthorized` on protected endpoints:
+  - Ensure `Authorization: Bearer <token>` header is sent
+  - Confirm token issuer/audience/key match backend settings
+
+- Mail sending fails:
+  - Validate `Smtp:*` config and port reachability
+  - If auth is enabled, ensure username/password are set
+
+---
+
+<div align="center">
+
+## Made with ❤️ — contributors
+
+</div>
